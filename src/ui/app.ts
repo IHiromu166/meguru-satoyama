@@ -1,4 +1,4 @@
-import { advancePhase, createGame, gainCard, playCard, scoreOf } from "../core/engine";
+import { advancePhase, createGame, gainCard, invasionPressure, playCard, scoreOf } from "../core/engine";
 import type { GameState, Phase } from "../core/types";
 import { renderField, renderHand } from "./hand";
 import { renderResult, renderTitle } from "./screens";
@@ -25,18 +25,18 @@ const NEXT_PHASE_LABEL: Record<Phase, string> = {
 const LOG_VISIBLE = 8;
 
 /**
- * ターン数からの侵入圧の目安。DESIGN.md 第5節の侵入スケジュールをそのまま表示するだけ。
- * TODO: docs/REVIEW.md B-5。core 側にクエリが用意され次第そちらに差し替える
- * (現状は invasion.ts と閾値が二重に存在している)。
+ * 侵入圧の表示。侵入スケジュールの閾値は core の invasionPressure が持っているので、
+ * ここは 1ターンあたりの加算量を日本語のラベルに直すだけにする (docs/REVIEW.md B-5)。
  */
 function invasionPressureLabel(turn: number): string {
-  if (turn <= 3) {
+  const pressure = invasionPressure(turn);
+  if (pressure <= 0) {
     return "侵入圧 なし";
   }
-  if (turn <= 8) {
-    return "侵入圧 2ターンに1体";
+  if (pressure < 1) {
+    return `侵入圧 ${Math.round(1 / pressure)}ターンに1体`;
   }
-  return "侵入圧 1ターンに1体";
+  return `侵入圧 1ターンに${pressure}体`;
 }
 
 let state: GameState | null = null;
