@@ -130,6 +130,7 @@ worktree はリポジトリの**外**(兄弟ディレクトリ)に置く。リ�
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 型定義、モジュール構成、core の公開 API |
 | [docs/CARDS.md](docs/CARDS.md) | 全30種のカードデータ (数値は調整前の初期値) |
 | [docs/MOBILE.md](docs/MOBILE.md) | スマートフォンでの動作確認手順と `vite.config.ts` の必須設定 |
+| [docs/REVIEW.md](docs/REVIEW.md) | レビューで出た未対応の指摘と担当。着手前に自分の担当分を確認する |
 
 ### この企画での追加ルール
 
