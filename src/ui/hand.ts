@@ -109,13 +109,20 @@ function renderHandCard(state: GameState, inst: CardInstance, callbacks: HandCal
       callbacks.onPlay(inst.uid);
       return;
     }
-    openPreyPicker(def.name, preys, (preyUid) => callbacks.onPlay(inst.uid, preyUid));
+    openPreyPicker(state, def.name, preys, (preyUid) => callbacks.onPlay(inst.uid, preyUid));
   });
 
   return card;
 }
 
+/**
+ * 捕食対象を選ぶ。候補は `legalPreys` の結果をそのまま使い、UI では可否を判定しない。
+ * ただし **どのゾーンにいるか** は必ず出す。場の生産者は既にエネルギーを産出済みで、
+ * 手札のカードはまだプレイしていない (DESIGN.md 第2節 裁定2) ため、
+ * 同名のカードでも選択の意味がまったく違う。
+ */
 function openPreyPicker(
+  state: GameState,
   predatorName: string,
   preys: readonly CardInstance[],
   onChoose: (preyUid: number) => void,
@@ -130,16 +137,36 @@ function openPreyPicker(
   title.textContent = `${predatorName} の捕食対象を選ぶ`;
   dialog.appendChild(title);
 
+  const hint = document.createElement("p");
+  hint.className = "dialog-hint";
+  hint.textContent = "場のカードは既にエネルギーを産出済み。手札のカードはまだプレイしていない。";
+  dialog.appendChild(hint);
+
   const list = document.createElement("div");
   list.className = "prey-list";
 
   for (const prey of preys) {
     const def = defOf(prey.defId);
+    const inField = state.field.some((candidate) => candidate.uid === prey.uid);
+
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "card prey-choice";
     btn.style.setProperty("--stage-color", colorFor(def));
-    btn.textContent = def.name;
+
+    const name = document.createElement("span");
+    name.className = "card-name";
+    name.textContent = def.name;
+
+    const zone = document.createElement("span");
+    zone.className = `prey-zone prey-zone-${inField ? "field" : "hand"}`;
+    zone.textContent = inField ? "場" : "手札";
+
+    const stage = document.createElement("span");
+    stage.className = "card-stage";
+    stage.textContent = stageLabel(def);
+
+    btn.append(name, zone, stage);
     btn.addEventListener("click", () => {
       document.body.removeChild(overlay);
       onChoose(prey.uid);
