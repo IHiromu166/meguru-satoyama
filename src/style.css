@@ -13,12 +13,16 @@
   box-sizing: border-box;
 }
 
+/*
+ * html/body に overflow-x を付けない。body がスクロールコンテナ化して
+ * 子孫の position: sticky が効かなくなるため (docs/REVIEW.md A-4)。
+ * 横のはみ出しは各セクション側 (.web / .game-scroll) で抑える。
+ */
 html,
 body {
   margin: 0;
   padding: 0;
   width: 100%;
-  overflow-x: hidden;
   background: var(--bg);
   color: var(--text);
   font-family:
@@ -37,6 +41,7 @@ button {
 
 #app {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -133,6 +138,12 @@ button {
   text-align: right;
 }
 
+.seed-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .score-total th,
 .score-total td {
   font-weight: 700;
@@ -143,26 +154,97 @@ button {
 
 /* ---------- ゲーム画面 ---------- */
 
+/*
+ * ゲーム画面は画面の高さに固定し、中央だけをスクロールさせる。
+ * こうしないとフェイズ送りボタンが供給リストの下に埋もれ、
+ * 毎フェイズ最下部までスクロールしないと進めなくなる。
+ */
 .screen-game {
-  padding: 0 0 12px;
+  height: 100vh;
+  height: 100dvh;
+  padding: 0;
   gap: 0;
+  overflow: hidden;
+}
+
+.game-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 12px;
 }
 
 .game-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  flex: none;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.header-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 12px;
-  padding: 8px 12px;
+  gap: 2px 12px;
+}
+
+.header-row-sub {
+  margin-top: 2px;
+  color: var(--muted);
   font-size: 11px;
 }
 
 .header-item {
   white-space: nowrap;
+}
+
+/* ---------- ログ ---------- */
+
+/*
+ * 侵入・増殖・捕食・飢餓はログを読まないと分からない。
+ * スクロール領域の外に置き、フェイズを送った直後に必ず目に入るようにする。
+ */
+.log {
+  flex: none;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 4px 12px 6px;
+  font-size: 11px;
+}
+
+.log-summary {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 20px;
+}
+
+.log-empty {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.log-list {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  max-height: 74px;
+  overflow-y: auto;
+}
+
+.log-entry {
+  display: flex;
+  gap: 6px;
+  line-height: 1.5;
+}
+
+.log-turn {
+  flex: none;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .section {
@@ -171,7 +253,7 @@ button {
 
 .section h2 {
   margin: 0 0 6px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
   font-weight: 700;
 }
@@ -190,7 +272,7 @@ button {
 }
 
 .web-label {
-  font-size: 9px;
+  font-size: 11px;
   fill: var(--text);
 }
 
@@ -208,7 +290,7 @@ button {
 
 .field-empty {
   margin: 0;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 
@@ -216,7 +298,7 @@ button {
   border: 2px solid var(--stage-color, var(--border));
   border-radius: 999px;
   padding: 4px 10px;
-  font-size: 10px;
+  font-size: 11px;
   background: var(--surface);
 }
 
@@ -246,38 +328,38 @@ button {
   background: var(--stage-color, var(--muted));
   color: #fff;
   border-radius: 999px;
-  min-width: 16px;
-  padding: 1px 5px;
-  font-size: 9px;
+  min-width: 18px;
+  padding: 1px 6px;
+  font-size: 10px;
   text-align: center;
 }
 
 .card-name {
   font-weight: 700;
-  font-size: 10px;
-  line-height: 1.2;
+  font-size: 12px;
+  line-height: 1.25;
 }
 
 .card-stage {
-  font-size: 8px;
+  font-size: 10px;
   color: var(--muted);
 }
 
 .card-text {
-  font-size: 8px;
+  font-size: 10px;
   color: var(--muted);
-  line-height: 1.3;
+  line-height: 1.4;
 }
 
 .card-stock {
-  font-size: 8px;
+  font-size: 10px;
   color: var(--muted);
   margin-top: 2px;
 }
 
 .card-badge {
   margin-top: 2px;
-  font-size: 8px;
+  font-size: 10px;
   background: var(--border);
   color: var(--text);
   border-radius: 4px;
@@ -302,16 +384,14 @@ button {
 /* ---------- 手札 ---------- */
 
 .hand {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
 }
 
 .hand-card {
-  width: 61px;
-  min-height: 96px;
-  padding: 4px 5px;
+  min-height: 104px;
+  padding: 6px;
 }
 
 /* ---------- 供給 ---------- */
@@ -322,19 +402,18 @@ button {
 
 .supply-row-title {
   margin: 0 0 4px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 
 .supply-row-cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
 }
 
 .supply-card {
-  width: 88px;
-  min-height: 92px;
+  min-height: 96px;
 }
 
 /* ---------- 捕食対象の選択ダイアログ ---------- */
@@ -365,15 +444,41 @@ button {
   font-size: 14px;
 }
 
+.dialog-hint {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
 .prey-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
 }
 
 .prey-choice {
-  width: 80px;
-  min-height: 44px;
+  min-height: 60px;
+  gap: 3px;
+}
+
+/* 同名のカードでも、場か手札かで選択の意味がまったく違う (DESIGN.md 第2節 裁定2) */
+.prey-zone {
+  align-self: flex-start;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.prey-zone-field {
+  background: #e3efe4;
+  color: var(--accent);
+}
+
+.prey-zone-hand {
+  background: var(--border);
+  color: var(--text);
 }
 
 .dialog-cancel {
@@ -389,12 +494,11 @@ button {
 /* ---------- フェイズ送りボタン ---------- */
 
 .advance-bar {
-  position: sticky;
-  bottom: 0;
+  flex: none;
   background: var(--surface);
   border-top: 1px solid var(--border);
   padding: 10px 12px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
   display: flex;
   justify-content: center;
-  margin-top: 12px;
 }
