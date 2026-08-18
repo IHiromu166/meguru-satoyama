@@ -129,6 +129,7 @@ worktree はリポジトリの**外**(兄弟ディレクトリ)に置く。リ�
 | [docs/DESIGN.md](docs/DESIGN.md) | ゲームのルールと、実装時に迷う箇所の裁定 |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 型定義、モジュール構成、core の公開 API |
 | [docs/CARDS.md](docs/CARDS.md) | 全30種のカードデータ (数値は調整前の初期値) |
+| [docs/MOBILE.md](docs/MOBILE.md) | スマートフォンでの動作確認手順と `vite.config.ts` の必須設定 |
 
 ### この企画での追加ルール
 

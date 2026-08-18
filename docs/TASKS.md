@@ -66,7 +66,8 @@
 
 1. Vite + TypeScript (strict) の雛形を作る。
    `package.json` のスクリプトは `dev` / `build` / `test` の3つ。
-   `dev` は `--host` を付ける (スマートフォンから確認するため)。
+   `vite.config.ts` の `server` 設定は [MOBILE.md](./MOBILE.md) 第2節のとおりに書く
+   (`strictPort` / `allowedHosts` / `hmr.clientPort`)。**`--host` は付けない。**
 2. Vitest を入れる。
 3. `src/core/types.ts` を [ARCHITECTURE.md 第3節](./ARCHITECTURE.md) から**そのまま**書き写す。
 4. `src/core/rng.ts` を実装する (mulberry32、[ARCHITECTURE.md 第5節](./ARCHITECTURE.md))。
@@ -77,7 +78,7 @@
 
 ### 完了条件
 
-- `npm run dev` が起動し、スマートフォンから LAN 経由で開ける
+- `npm run dev` が起動し、[MOBILE.md](./MOBILE.md) の URL でスマートフォンから開ける
 - `npm run build` が通る
 - `npm test` が通る (テスト0件でよい)
 - `npx tsc --noEmit` が型エラーなしで通る

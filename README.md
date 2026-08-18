@@ -50,6 +50,7 @@
 | [docs/DESIGN.md](docs/DESIGN.md) | ゲームのルールと、実装時に迷う箇所の裁定 |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 型定義、モジュール構成、core の公開 API |
 | [docs/CARDS.md](docs/CARDS.md) | 全30種のカードデータ |
+| [docs/MOBILE.md](docs/MOBILE.md) | スマートフォンでの動作確認手順 |
 
 作業規約は [AGENTS.md](AGENTS.md) を参照。
 

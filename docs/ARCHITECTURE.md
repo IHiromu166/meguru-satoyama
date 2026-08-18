@@ -305,4 +305,7 @@ export function shuffle<T>(state: number, xs: readonly T[]): { value: T[]; state
 | 描画 | インライン SVG | 食物網とピラミッドに最適。画像素材が不要 |
 
 `package.json` のスクリプトは `dev` / `build` / `test` の3つを用意する。
-`dev` は `--host` を付け、LAN からアクセスできるようにする (スマートフォン確認のため)。
+
+`vite.config.ts` の `server` 設定 (`strictPort` / `allowedHosts` / `hmr.clientPort`) は
+スマートフォン確認の経路に直結する。**[MOBILE.md](./MOBILE.md) 第2節のとおりに書くこと。**
+`--host` は付けない。Vite は 127.0.0.1 のままにして、外向きの口は Tailscale に任せる。
