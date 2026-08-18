@@ -51,13 +51,16 @@ tailscale serve status
 
 ### `vite.config.ts`
 
-**この3つが揃っていないとスマホから開けない。**
+**この4つが揃っていないとスマホから開けない。**
 
 ```ts
 import { defineConfig } from "vite";
 
 export default defineConfig({
   server: {
+    // 明示しないと Vite は [::1] (IPv6) だけを掴む。tailscale serve の転送先は
+    // 127.0.0.1 (IPv4) なので、そこに何も居ないと 502 になる
+    host: "127.0.0.1",
     port: 5173,
     // ポートがずれると tailscale serve の向き先と食い違って 502 になる
     strictPort: true,
@@ -111,7 +114,8 @@ export default defineConfig({
 | 症状 | 確認すること |
 | --- | --- |
 | ページが開けない | スマホの Tailscale が接続中か。`tailscale status` に両端末が出るか |
-| 502 が返る | `npm run dev` が動いているか。Vite が 5173 以外に逃げていないか (`strictPort`) |
+| 502 が返る | `npm run dev` が動いているか。`netstat -ano \| findstr :5173` の待ち受けが `[::1]` になっていないか (`server.host` の指定漏れ) |
+| `Port 5173 is already in use` で起動しない | 前回の Vite が残っている。`Get-NetTCPConnection -LocalPort 5173 -State Listen` で PID を調べて落とす |
 | `Blocked request. This host is not allowed` | `server.allowedHosts` に `.ts.net` があるか |
 | 画面は出るが保存しても反映されない | `server.hmr.clientPort` が 8443 になっているか |
 | 証明書エラー | Tailscale 管理画面で **HTTPS Certificates** が ON か |
@@ -135,5 +139,7 @@ tailscale serve --https=8443 off
 | スマホ | `a502zt` (100.117.26.91) |
 | URL | `https://desktop-4nlbkml.tail8fe514.ts.net:8443/` |
 
-2026-08-18 時点で、この経路が疎通することを確認済み
-(Vite ではなく検証用の HTTP サーバーで確認)。
+2026-08-18 時点で、**実際の Vite dev server で疎通を確認済み**。
+`https://desktop-4nlbkml.tail8fe514.ts.net:8443/` が 200 を返し、
+`allowedHosts` によって Host ヘッダ検査を通過することまで確認した。
+HMR (`hmr.clientPort`) は実機のブラウザでの確認が必要で、未検証。
