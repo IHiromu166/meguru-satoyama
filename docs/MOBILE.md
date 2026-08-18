@@ -145,7 +145,9 @@ tailscale serve --https=8443 off
 | スマホ | `a502zt` (100.117.26.91) |
 | URL | `https://desktop-4nlbkml.tail8fe514.ts.net:8443/` |
 
-2026-08-18 時点で、**実際の Vite dev server で疎通を確認済み**。
-`https://desktop-4nlbkml.tail8fe514.ts.net:8443/` が 200 を返し、
-`allowedHosts` によって Host ヘッダ検査を通過することまで確認した。
-HMR (`hmr.clientPort`) は実機のブラウザでの確認が必要で、未検証。
+2026-08-18 時点で、**Android 実機のブラウザまで含めて全経路を確認済み**。
+
+- `https://desktop-4nlbkml.tail8fe514.ts.net:8443/` が 200 を返す
+- `allowedHosts` により Host ヘッダ検査を通過する
+- **HMR が実機で動く** — PC 側で `src/main.ts` を保存すると、
+  スマホの画面がリロード操作なしで更新されることを確認した
