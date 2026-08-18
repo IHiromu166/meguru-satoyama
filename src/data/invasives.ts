@@ -43,7 +43,7 @@ export const INVASIVES: CardDef[] = [
     effects: [],
     aura: [{ t: "eatConsumer", trophic: 2 }],
     supply: 8,
-    text: "手札にある間、クリーンアップ時に一次消費者を1枚捨て札へ送る",
+    text: "手札にある間、クリーンアップ時に一次消費者を1枚廃棄する",
   },
   {
     id: "araiguma",
@@ -57,6 +57,6 @@ export const INVASIVES: CardDef[] = [
       { t: "eatConsumer", trophic: 2 },
     ],
     supply: 6,
-    text: "手札にある間、生産者のエネルギー産出 −1。クリーンアップ時に一次消費者を1枚捨て札へ送る",
+    text: "手札にある間、生産者のエネルギー産出 −1。クリーンアップ時に一次消費者を1枚廃棄する",
   },
 ];
