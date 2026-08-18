@@ -117,6 +117,9 @@ UI は栄養段階ごとに行を分けて並べること。供給そのもの�
 | `bass` | オオクチバス | `eatConsumer trophic 2` | 8 | なし |
 | `araiguma` | アライグマ | `producerEnergy -1`, `eatConsumer trophic 2` | 6 | ツキノワグマ |
 
+`eatConsumer` は場・手札・捨て札から該当段階の在来消費者を1枚選び、
+捨て札ではなく **廃棄** する (→ [DESIGN.md](./DESIGN.md) 第5節)。
+
 外来種の山の合計は 40 枚。すべて出しきってもデッキが飲み込まれない量ではないため、
 放置すれば確実に敗北する。
 

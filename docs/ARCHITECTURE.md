@@ -90,7 +90,7 @@ export type Aura =
   | { t: "producerEnergy"; n: number }
   /** 分解者の効果を無効化する */
   | { t: "blockDecomposer" }
-  /** クリーンアップ時、指定段階のカードを1枚捨て札へ送る */
+  /** クリーンアップ時、場・手札・捨て札から指定段階の消費者を1枚廃棄する */
   | { t: "eatConsumer"; trophic: Trophic }
   /** 増殖時に追加で n 枚増える */
   | { t: "extraSpread"; n: number };
@@ -260,7 +260,10 @@ export function shuffle<T>(state: number, xs: readonly T[]): { value: T[]; state
 
 ### クリーンアップの順序
 
-1. 手札の外来種の `eatConsumer` を解決 (該当段階を1枚ずつ捨て札へ)。
+1. 手札の外来種の `eatConsumer` を解決。**場 → 手札 → 捨て札** の順に
+   `trophic === aura.trophic && kind === "consumer"` を探し、最初に見つかった1枚を
+   **`trash` へ** 送る (捨て札ではない)。手札の外来種1枚につき、その `aura` に
+   列挙された順で1回ずつ解決する。候補が無ければ何もしない。
 2. 場と手札をすべて捨て札へ。
 3. 5枚引く。山札が足りなければ捨て札をシャッフルして山札に補充してから引く。
 4. 敗北判定 → 20ターン判定。
