@@ -1,4 +1,4 @@
-import type { CardInstance, GameState, Trophic } from "../core/types";
+import type { CardInstance, GameState } from "../core/types";
 import { trophicCounts } from "../core/engine";
 import { defOf, TROPHIC_STAGE_LABEL, trophicColor } from "./theme";
 
@@ -8,23 +8,35 @@ const BAR_HEIGHT = 22;
 const LABEL_HEIGHT = 14;
 const ROW_GAP = 6;
 const ROW_HEIGHT = LABEL_HEIGHT + BAR_HEIGHT + ROW_GAP;
-const PX_PER_CARD = 10;
 const MIN_BAR_WIDTH = 14;
 const MAX_BAR_WIDTH = VIEW_WIDTH - 48;
+
+type Stage = 1 | 2 | 3 | 4;
+
+interface Row {
+  count: number;
+  color: string;
+  label: string;
+}
 
 /** スコア算定と同じ範囲 (デッキ全体、廃棄は除く) */
 function livingInstances(state: GameState): CardInstance[] {
   return [...state.deck, ...state.hand, ...state.field, ...state.discard];
 }
 
-function countByKind(state: GameState, kind: string): number {
-  let count = 0;
+/** 段階の外に置く2行 (分解者・外来種) の枚数を1回の走査で数える */
+function countExtraRows(state: GameState): { decomposer: number; invasive: number } {
+  let decomposer = 0;
+  let invasive = 0;
   for (const inst of livingInstances(state)) {
-    if (defOf(inst.defId).kind === kind) {
-      count += 1;
+    const kind = defOf(inst.defId).kind;
+    if (kind === "decomposer") {
+      decomposer += 1;
+    } else if (kind === "invasive") {
+      invasive += 1;
     }
   }
-  return count;
+  return { decomposer, invasive };
 }
 
 function el(tag: string, attrs: Record<string, string>): SVGElement {
@@ -45,11 +57,27 @@ export function renderWeb(state: GameState, container: HTMLElement): void {
   container.className = "web";
 
   const counts = trophicCounts(state);
-  const stages: Trophic[] = [4, 3, 2, 1];
-  const pyramidHeight = stages.length * ROW_HEIGHT;
+  const stages: Stage[] = [4, 3, 2, 1];
+  const pyramidRows: Row[] = stages.map((trophic) => ({
+    count: counts[trophic],
+    color: trophicColor(trophic),
+    label: TROPHIC_STAGE_LABEL[trophic],
+  }));
+
+  const extra = countExtraRows(state);
+  const extraRows: Row[] = [
+    { count: extra.decomposer, color: "#8a6a4c", label: "分解者(循環)" },
+    { count: extra.invasive, color: "#b23bd1", label: "外来種" },
+  ];
+
+  // 最大の行を基準にした相対スケール。1枚あたり固定 px だと終盤に頭打ちになり、
+  // ちょうどピラミッドが逆転したことを見せたい局面で差が出なくなる。
+  const scaleMax = Math.max(1, ...pyramidRows.map((row) => row.count), ...extraRows.map((row) => row.count));
+
+  const pyramidHeight = pyramidRows.length * ROW_HEIGHT;
   const dividerY = pyramidHeight + ROW_GAP / 2;
-  const decomposerRowStart = pyramidHeight + ROW_GAP;
-  const totalHeight = decomposerRowStart + ROW_HEIGHT * 2;
+  const extraRowStart = pyramidHeight + ROW_GAP;
+  const totalHeight = extraRowStart + ROW_HEIGHT * extraRows.length;
 
   const svg = el("svg", {
     viewBox: `0 0 ${VIEW_WIDTH} ${totalHeight}`,
@@ -58,16 +86,8 @@ export function renderWeb(state: GameState, container: HTMLElement): void {
     "aria-label": "デッキの栄養段階ピラミッド",
   });
 
-  stages.forEach((trophic, index) => {
-    const y = index * ROW_HEIGHT;
-    svg.appendChild(
-      renderBar(
-        counts[trophic],
-        y,
-        trophicColor(trophic as Exclude<Trophic, 0>),
-        TROPHIC_STAGE_LABEL[trophic as 1 | 2 | 3 | 4],
-      ),
-    );
+  pyramidRows.forEach((row, index) => {
+    svg.appendChild(renderBar(row, index * ROW_HEIGHT, scaleMax));
   });
 
   svg.appendChild(
@@ -81,27 +101,24 @@ export function renderWeb(state: GameState, container: HTMLElement): void {
     }),
   );
 
-  const decomposerCount = countByKind(state, "decomposer");
-  svg.appendChild(renderBar(decomposerCount, decomposerRowStart, "#8a6a4c", "分解者(循環)"));
-
-  const invasiveCount = countByKind(state, "invasive");
-  svg.appendChild(
-    renderBar(invasiveCount, decomposerRowStart + ROW_HEIGHT, "#b23bd1", "外来種"),
-  );
+  extraRows.forEach((row, index) => {
+    svg.appendChild(renderBar(row, extraRowStart + index * ROW_HEIGHT, scaleMax));
+  });
 
   container.appendChild(svg);
 }
 
-function renderBar(count: number, rowY: number, color: string, label: string): SVGElement {
+function renderBar(row: Row, rowY: number, scaleMax: number): SVGElement {
   const group = el("g", {});
   const barY = rowY + LABEL_HEIGHT;
 
   const labelEl = el("text", { x: "0", y: String(rowY + LABEL_HEIGHT - 3), class: "web-label" });
-  labelEl.textContent = `${label} ${count}`;
+  labelEl.textContent = `${row.label} ${row.count}`;
   group.appendChild(labelEl);
 
-  if (count > 0) {
-    const width = Math.min(MAX_BAR_WIDTH, Math.max(MIN_BAR_WIDTH, count * PX_PER_CARD));
+  if (row.count > 0) {
+    const ratio = row.count / scaleMax;
+    const width = MIN_BAR_WIDTH + (MAX_BAR_WIDTH - MIN_BAR_WIDTH) * ratio;
     const x = (VIEW_WIDTH - width) / 2;
     group.appendChild(
       el("rect", {
@@ -110,7 +127,7 @@ function renderBar(count: number, rowY: number, color: string, label: string): S
         width: String(width),
         height: String(BAR_HEIGHT),
         rx: "4",
-        fill: color,
+        fill: row.color,
       }),
     );
   }
