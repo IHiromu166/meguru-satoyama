@@ -1,3 +1,62 @@
 import type { CardDef } from "../core/types";
 
-export const INVASIVES: CardDef[] = [];
+export const INVASIVES: CardDef[] = [
+  {
+    id: "seitaka",
+    name: "セイタカアワダチソウ",
+    kind: "invasive",
+    trophic: 0,
+    cost: null,
+    effects: [],
+    aura: [{ t: "producerEnergy", n: -1 }],
+    supply: 8,
+    text: "手札にある間、生産者のエネルギー産出 −1",
+  },
+  {
+    id: "ushigaeru",
+    name: "ウシガエル",
+    kind: "invasive",
+    trophic: 0,
+    cost: null,
+    effects: [],
+    aura: [{ t: "extraSpread", n: 1 }],
+    supply: 10,
+    text: "手札にある間、増殖時に追加で1枚増える",
+  },
+  {
+    id: "zarigani",
+    name: "アメリカザリガニ",
+    kind: "invasive",
+    trophic: 0,
+    cost: null,
+    effects: [],
+    aura: [{ t: "blockDecomposer" }],
+    supply: 8,
+    text: "手札にある間、分解者の効果を無効化する",
+  },
+  {
+    id: "bass",
+    name: "オオクチバス",
+    kind: "invasive",
+    trophic: 0,
+    cost: null,
+    effects: [],
+    aura: [{ t: "eatConsumer", trophic: 2 }],
+    supply: 8,
+    text: "手札にある間、クリーンアップ時に一次消費者を1枚捨て札へ送る",
+  },
+  {
+    id: "araiguma",
+    name: "アライグマ",
+    kind: "invasive",
+    trophic: 0,
+    cost: null,
+    effects: [],
+    aura: [
+      { t: "producerEnergy", n: -1 },
+      { t: "eatConsumer", trophic: 2 },
+    ],
+    supply: 6,
+    text: "手札にある間、生産者のエネルギー産出 −1。クリーンアップ時に一次消費者を1枚捨て札へ送る",
+  },
+];
