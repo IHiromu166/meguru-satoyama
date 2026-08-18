@@ -52,18 +52,26 @@ worktree はリポジトリの**外**(兄弟ディレクトリ)に置く。リ�
 1. 初回セットアップ(メインツリーで実行):
 
    ```
-   git worktree add ../game-codex -b codex/main
-   git worktree add ../game-claude -b claude/main
+   git worktree add ../game-codex -b codex/setup main
+   git worktree add ../game-claude -b claude/setup main
    ```
 
 2. 各エージェントは**自分の worktree ディレクトリで起動**し、そこだけで作業する。
-   ブランチは `codex/<トピック>` / `claude/<トピック>` の形式で切る。
+   作業を始めるときは、最新の `main` を起点に `codex/<トピック>` /
+   `claude/<トピック>` ブランチを作成する。`codex/main` / `claude/main` は作成しない。
+
+   ```
+   git switch -c codex/<トピック> main
+   ```
+
+   `main` はメイン worktree でチェックアウトされているため、エージェント用 worktree では
+   直接チェックアウトしない。
 
 3. 統合はメインツリー(`d:\git\game`)で行う:
 
    ```
-   git merge codex/main
-   git merge claude/main
+   git merge codex/<トピック>
+   git merge claude/<トピック>
    ```
 
    コンフリクトの解消はメインツリーで、ユーザーまたはユーザーが指名した
@@ -73,7 +81,7 @@ worktree はリポジトリの**外**(兄弟ディレクトリ)に置く。リ�
 
    ```
    git worktree remove ../game-codex
-   git branch -d codex/main
+   git branch -d codex/<トピック>
    ```
 
    現状の確認は `git worktree list`。
