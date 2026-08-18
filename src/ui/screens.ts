@@ -4,6 +4,20 @@ function randomSeed(): number {
   return Math.floor(Math.random() * 2 ** 31);
 }
 
+/**
+ * 入力欄のシードを解釈する。空欄や非数値はランダム扱いにする
+ * (`Number("")` は 0 になるため、有限判定だけでは空欄が必ずシード0になってしまう)。
+ * 乱数生成器は整数しか区別しないので、小数はここで丸めて表示と実際を一致させる。
+ */
+function parseSeed(raw: string): number {
+  const trimmed = raw.trim();
+  if (trimmed === "") {
+    return randomSeed();
+  }
+  const value = Number(trimmed);
+  return Number.isFinite(value) ? Math.trunc(value) : randomSeed();
+}
+
 /** タイトル画面。シードを指定して再現可能なプレイができる */
 export function renderTitle(container: HTMLElement, onStart: (seed: number) => void): void {
   container.innerHTML = "";
@@ -29,6 +43,9 @@ export function renderTitle(container: HTMLElement, onStart: (seed: number) => v
   const input = document.createElement("input");
   input.type = "number";
   input.className = "seed-input";
+  input.step = "1";
+  input.min = "0";
+  input.inputMode = "numeric";
   input.value = String(randomSeed());
   label.appendChild(input);
   form.appendChild(label);
@@ -41,8 +58,7 @@ export function renderTitle(container: HTMLElement, onStart: (seed: number) => v
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    const seed = Number(input.value);
-    onStart(Number.isFinite(seed) ? seed : randomSeed());
+    onStart(parseSeed(input.value));
   });
 
   container.appendChild(form);
@@ -62,6 +78,7 @@ export function renderResult(
   container: HTMLElement,
   state: GameState,
   score: ScoreBreakdown,
+  seed: number,
   onRestart: () => void,
 ): void {
   container.innerHTML = "";
@@ -103,6 +120,11 @@ export function renderResult(
   table.appendChild(totalRow);
 
   container.appendChild(table);
+
+  const seedNote = document.createElement("p");
+  seedNote.className = "seed-note";
+  seedNote.textContent = `シード ${seed}`;
+  container.appendChild(seedNote);
 
   const restart = document.createElement("button");
   restart.type = "button";
