@@ -1,5 +1,5 @@
 import { CARDS } from "../data/cards";
-import { INVASIVES } from "../data/invasives";
+import { cardDefinition } from "./cards";
 import { resolveEffects } from "./effects";
 import { resolveInvasion, isCollapsed } from "./invasion";
 import { legalPreys as findLegalPreys, needsPrey as cardNeedsPrey } from "./predation";
@@ -7,7 +7,6 @@ import { scoreOf as calculateScore, trophicCounts as calculateTrophicCounts } fr
 import { createInitialState, drawCards } from "./state";
 import type { CardInstance, GameState, ScoreBreakdown, Trophic } from "./types";
 
-const definition = (id: string) => [...CARDS, ...INVASIVES].find((card) => card.id === id);
 const log = (state: GameState, text: string): GameState => ({ ...state, log: [...state.log, { turn: state.turn, text }] });
 
 /** 初期状態を作る。同じ seed からは必ず同じ展開になる */
@@ -19,18 +18,18 @@ export function createGame(seed: number): GameState {
 export function playCard(state: GameState, uid: number, preyUid?: number): GameState {
   if (!canPlay(state, uid)) return state;
   const instance = state.hand.find((card) => card.uid === uid)!;
-  const card = definition(instance.defId)!;
+  const card = cardDefinition(instance.defId)!;
   let result: GameState = { ...state, hand: state.hand.filter((candidate) => candidate.uid !== uid), field: [...state.field, instance] };
   if (cardNeedsPrey(state, uid)) {
     const prey = findLegalPreys(state, uid).find((candidate) => candidate.uid === preyUid);
     if (!prey) return log(result, `${card.name}は飢餓になった`);
-    const preyDef = definition(prey.defId)!;
+    const preyDef = cardDefinition(prey.defId)!;
     if (state.hand.some((candidate) => candidate.uid === prey.uid)) result = { ...result, hand: result.hand.filter((candidate) => candidate.uid !== prey.uid) };
     else result = { ...result, field: result.field.filter((candidate) => candidate.uid !== prey.uid) };
     result = preyDef.kind === "invasive" ? { ...result, trash: [...result.trash, prey] } : { ...result, discard: [...result.discard, prey] };
   }
   if (card.kind === "producer") {
-    const modifier = state.hand.reduce((total, candidate) => total + (definition(candidate.defId)?.aura ?? []).reduce((sum, aura) => sum + (aura.t === "producerEnergy" ? aura.n : 0), 0), 0);
+    const modifier = state.hand.reduce((total, candidate) => total + (cardDefinition(candidate.defId)?.aura ?? []).reduce((sum, aura) => sum + (aura.t === "producerEnergy" ? aura.n : 0), 0), 0);
     result = { ...result, energy: result.energy + Math.max(0, (card.energy ?? 0) + modifier) };
   }
   return log(resolveEffects(result, card), `${card.name}をプレイした`);
@@ -51,7 +50,9 @@ export function advancePhase(state: GameState): GameState {
   if (state.phase === "main") return { ...state, phase: "gain" };
   if (state.phase === "gain") {
     const invaded = resolveInvasion(state);
-    return isCollapsed(invaded) ? { ...invaded, phase: "over", result: "collapsed" } : { ...invaded, phase: "invasion" };
+    return isCollapsed(invaded)
+      ? log({ ...invaded, phase: "over", result: "collapsed" }, "外来種が過半数に達した")
+      : { ...invaded, phase: "invasion" };
   }
   if (state.phase === "invasion") return { ...state, phase: "cleanup" };
   if (state.phase !== "cleanup") return state;
@@ -65,7 +66,7 @@ export function advancePhase(state: GameState): GameState {
 /** そのカードが今プレイ可能か */
 export function canPlay(state: GameState, uid: number): boolean {
   const card = state.hand.find((candidate) => candidate.uid === uid);
-  return state.phase === "main" && state.result === "playing" && card !== undefined && definition(card.defId)?.kind !== "invasive";
+  return state.phase === "main" && state.result === "playing" && card !== undefined && cardDefinition(card.defId)?.kind !== "invasive";
 }
 
 /** そのカードの捕食対象になりうるカードの一覧。空配列なら飢餓になる */
@@ -88,17 +89,23 @@ export function trophicCounts(state: GameState): Record<Trophic, number> {
   return calculateTrophicCounts(state);
 }
 
+export { invasionPressure } from "./invasion";
+
 function cleanup(state: GameState): GameState {
   let result = state;
   for (const invasive of state.hand) {
-    const def = definition(invasive.defId);
+    const def = cardDefinition(invasive.defId);
     for (const aura of def?.aura ?? []) {
       if (aura.t !== "eatConsumer") continue;
-      const victim = [...result.field, ...result.hand].find((candidate) => definition(candidate.defId)?.trophic === aura.trophic && definition(candidate.defId)?.kind === "consumer");
+      const victim = [...result.field, ...result.hand, ...result.discard].find((candidate) => {
+        const candidateDef = cardDefinition(candidate.defId);
+        return candidateDef?.trophic === aura.trophic && candidateDef.kind === "consumer";
+      });
       if (!victim) continue;
       if (result.field.some((candidate) => candidate.uid === victim.uid)) result = { ...result, field: result.field.filter((candidate) => candidate.uid !== victim.uid) };
-      else result = { ...result, hand: result.hand.filter((candidate) => candidate.uid !== victim.uid) };
-      result = { ...result, discard: [...result.discard, victim] };
+      else if (result.hand.some((candidate) => candidate.uid === victim.uid)) result = { ...result, hand: result.hand.filter((candidate) => candidate.uid !== victim.uid) };
+      else result = { ...result, discard: result.discard.filter((candidate) => candidate.uid !== victim.uid) };
+      result = log({ ...result, trash: [...result.trash, victim] }, `${def?.name ?? invasive.defId}が${cardDefinition(victim.defId)?.name ?? victim.defId}を捕食した (廃棄)`);
     }
   }
   result = { ...result, discard: [...result.discard, ...result.field, ...result.hand], field: [], hand: [], energy: 0, gainsLeft: 1 };

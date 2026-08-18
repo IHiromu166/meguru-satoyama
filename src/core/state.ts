@@ -24,6 +24,7 @@ function supplyOf(cards: readonly { id: string; supply: number }[]): Record<stri
 export function moveCard(
   state: GameState, uid: number, from: Zone, to: Zone,
 ): GameState {
+  if (from === to) return state;
   const source = state[from];
   const index = source.findIndex((card) => card.uid === uid);
   if (index < 0) return state;
