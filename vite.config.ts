@@ -5,11 +5,13 @@ function offlineCachePlugin(): Plugin {
     name: "offline-cache",
     apply: "build",
     generateBundle(_, bundle) {
+      // パスはすべて sw.js からの相対にする。GitHub Pages のように
+      // サブパス (/meguru-satoyama/) に置かれても、そのまま解決できるようにするため
       const precache = Object.values(bundle)
-        .map((entry) => `/${entry.fileName}`)
-        .filter((fileName) => fileName !== "/sw.js");
+        .map((entry) => `./${entry.fileName}`)
+        .filter((fileName) => fileName !== "./sw.js");
 
-      precache.push("/", "/index.html", "/manifest.webmanifest", "/icon.svg");
+      precache.push("./", "./index.html", "./manifest.webmanifest", "./icon.svg");
 
       this.emitFile({
         type: "asset",
@@ -47,7 +49,7 @@ self.addEventListener("fetch", (event) => {
         return response;
       } catch {
         if (event.request.mode === "navigate") {
-          return caches.match("/index.html");
+          return caches.match("./index.html");
         }
         return new Response("Offline", { status: 503, statusText: "Offline" });
       }
@@ -64,6 +66,11 @@ self.addEventListener("fetch", (event) => {
 // スマートフォンから tailscale serve 経由で見るときは `npm run dev:tunnel`
 // (= `vite --mode tunnel`) を使う。違いは HMR の接続先ポートだけ。
 export default defineConfig(({ mode }) => ({
+  // 相対パスで出力する。GitHub Pages のプロジェクトサイトは
+  // https://<user>.github.io/<repo>/ というサブパスに置かれるため、
+  // 絶対パス (/assets/...) だとどれも 404 になる。
+  // リポジトリ名を埋め込まないので、後でルート配信へ移しても直さなくてよい。
+  base: "./",
   plugins: [offlineCachePlugin()],
   server: {
     // 明示しないと [::1] (IPv6) だけを掴み、tailscale serve の転送先である
