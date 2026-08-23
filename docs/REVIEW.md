@@ -247,8 +247,9 @@
 - **状況**: 対応済み (`8d96c31`)。`beforeAll` によるグローバル汚染は無くなり、
   実在のカード id を使う `state()` ヘルパに置き換わった (13 tests)。
   aura 4種 / `moveCard` / `trashInvasive` のテストも入った。
-  **残っている穴**: `gainCard`、20ターンの `survived` 遷移、`advancePhase` の解決順序、
-  および [TASKS.md](./TASKS.md) A-7 が要求する「シード固定で20ターン完走」の通しテスト。
+  2026-08-23、シード固定の通しテスト (`tests/playthrough.test.ts`) が入り、
+  20ターンの `survived` 遷移が塞がった (17 tests)。
+  **残っている穴**: `gainCard`、`advancePhase` の解決順序。
 
 ### C-6 `definition()` が5モジュールにコピペされている
 

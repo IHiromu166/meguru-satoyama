@@ -54,7 +54,7 @@ Claude Code と Codex の**分業をやめた**。以降は単一の作業者が
 | データ | `src/data/{cards,invasives,supply}.ts` | 30種すべて実装 (在来22 + 駆除3 + 外来5) |
 | UI | `src/ui/{app,hand,supply,web,screens,theme}.ts` + `src/style.css` | 実装完了 (計 約1,400行) |
 | PWA | `public/{manifest.webmanifest,icon.svg}` + `vite.config.ts` の SW 生成 | 実装完了 |
-| テスト | `tests/core.test.ts` | 13件。カバレッジに穴あり (下記) |
+| テスト | `tests/core.test.ts` / `tests/playthrough.test.ts` | 17件。カバレッジに穴あり (下記) |
 
 core の公開 API は `createGame` / `playCard` / `gainCard` / `advancePhase` / `canPlay` /
 `legalPreys` / `needsPrey` / `scoreOf` / `trophicCounts` / `invasionPressure`。
@@ -67,8 +67,11 @@ UI からは `src/core/engine.ts` 経由でのみ呼ぶ。UI に残っている�
 
 ### 確認済み
 
-- **2026-08-23、分業終了時点のメインツリーで `npx tsc -b` / `npx vitest run` (13 passed) /
+- **2026-08-23、メインツリーで `npx tsc -b` / `npx vitest run` (17 passed) /
   `npx vite build` を実行し、すべて成功。**
+- **20ターンの通しプレイを `tests/playthrough.test.ts` で自動化した。**
+  シード `20260823` を自動プレイヤーで完走させ、`survived` に到達することを確認。
+  同ファイルで、何も操作せずフェイズだけ送る対照が20ターン前に崩壊することも確認している。
 - **ヘッドレス Edge (360×640) で12ターンの通しプレイ** (`main` @ `8d96c31` 時点)。
   侵入・増殖のログが実際に流れること、侵入圧の表示がターン3/4/9の境目で切り替わること、
   11ターン目の崩壊から結果画面まで到達すること、ページが縦にも横にもはみ出さないことを確認。
@@ -77,12 +80,28 @@ UI からは `src/core/engine.ts` 経由でのみ呼ぶ。UI に残っている�
 
 ### 未確認・未実施
 
-- **20ターン生存 (`survived`) ルートを一度も通していない。** 観測できているのは崩壊だけ。
-  コード上の分岐は存在するがテストも通しプレイも無い。
+- **人間による通しプレイ。** 20ターン完走はテストの自動プレイヤーでしか通していない。
 - **現在の UI での実機通しプレイ**。実機で見たのは phase 0 の「文字が出るだけ」の画面まで。
 - **バランス調整は未着手。** [CARDS.md](./CARDS.md) の数値は設計時の初期値のまま
-  一度も動かしていない。序盤の立ち上がり / 終盤の崩壊圧が意図どおりかは**誰も検証していない**。
-- テストの穴: `gainCard`、20ターン完走、`advancePhase` の解決順序。
+  一度も動かしていない。ただし下記のとおり、調整の手がかりになる数値は取れている。
+- テストの穴: `gainCard`、`advancePhase` の解決順序。
+
+### 通しテストから見えたバランスの傾向 (2026-08-23)
+
+`tests/playthrough.test.ts` と同じ自動プレイヤーで500シードを走らせた結果。
+**人が遊んだ結果ではない**ので、調整の出発点としてのみ扱う。
+
+| 観測 | 値 |
+| --- | --- |
+| 生存率 | 446 / 500 (89%) |
+| 崩壊したシードのターン | 最短11、多くは17〜20 |
+| 生存時の最終スコア | 中央値 **−52**、最大 32、最小 −120 |
+| 何も操作しない対照の崩壊ターン | 9〜13 (中央値11) |
+
+- **生き延びてもスコアがほぼマイナスになる。** 生存時もデッキに外来種が15枚前後残り、
+  `invasivePenalty` (1枚 −5) だけで −85 に達してプラス要素を食い潰している。
+  除去手段が足りないか、ペナルティの係数が重すぎる。
+- 崩壊は序盤ではなく終盤 (17〜20ターン) に集中している。序盤の侵入圧は緩い。
 
 ---
 
@@ -90,15 +109,15 @@ UI からは `src/core/engine.ts` 経由でのみ呼ぶ。UI に残っている�
 
 優先度順。各項目の中身は [TASKS.md](./TASKS.md) に書いてある。
 
-1. **シード固定で20ターン完走する通しテスト** — 生存ルートを検証する唯一の手段。
-2. **テストの穴埋め** — `gainCard`、`advancePhase` の解決順序、クリーンアップの廃棄。
-3. **バランス調整** — 人が実際に20ターン遊ぶ。ここで初めて CARDS.md の数値を動かす。
-4. **実機での通しプレイ** — PWA のインストールとオフライン起動もここで確認する。
-5. **REVIEW.md C-7 の整理** — `core/state.ts` の `supplyOf` と `data/supply.ts` の
+1. **テストの穴埋め** — `gainCard`、`advancePhase` の解決順序。
+2. **バランス調整** — 人が実際に20ターン遊ぶ。ここで初めて CARDS.md の数値を動かす。
+   上の「傾向」のとおり、まず疑うのは外来種の除去手段と `invasivePenalty` の係数。
+3. **実機での通しプレイ** — PWA のインストールとオフライン起動もここで確認する。
+4. **REVIEW.md C-7 の整理** — `core/state.ts` の `supplyOf` と `data/supply.ts` の
    `createSupply` が二重化。`findCard` / `moveCard` は未使用 export。
-6. **ARCHITECTURE.md の追補** — `src/core/cards.ts` (`cardDefinition`) と `invasionPressure` が
+5. **ARCHITECTURE.md の追補** — `src/core/cards.ts` (`cardDefinition`) と `invasionPressure` が
    第2節の構成表と第4節の公開 API 一覧に載っていない。
-7. (任意) Electron 化。
+6. (任意) Electron 化。
 
 ---
 
@@ -165,7 +184,7 @@ worktree 側に git 管理外のファイル (`node_modules` / `dist`) が残っ
 | --- | --- | --- |
 | [../README.md](../README.md) | 企画概要 | 有効 |
 | [DESIGN.md](./DESIGN.md) | ルールと裁定 | 有効 (`eatConsumer` の廃棄仕様を反映済み) |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | 型定義・モジュール構成・core API | 概ね有効。残タスク6の追補が要る |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | 型定義・モジュール構成・core API | 概ね有効。残タスク5の追補が要る |
 | [CARDS.md](./CARDS.md) | 全30種の数値 | 有効。**調整前の初期値** |
 | [MOBILE.md](./MOBILE.md) | 実機確認の経路 | 有効 |
 | [REVIEW.md](./REVIEW.md) | レビュー指摘16件と対応状況 | 有効。残件は C-7 とテストの穴のみ |
