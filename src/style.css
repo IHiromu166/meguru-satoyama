@@ -7,6 +7,8 @@
   --accent: #2f6f3e;
   --warning-bg: #fbe9e7;
   --warning-text: #8a2c22;
+  /* 手札ゾーンの下地。「自分の持ち物」の範囲を場や供給と切り離して見せる */
+  --hand-bg: #e8efdf;
 
   /* カード1枚の最小幅。画面が広いほど列を増やすため、幅は画面側で切り替える */
   --card-min: 100px;
@@ -388,6 +390,13 @@ button {
 
 /* ---------- 手札 ---------- */
 
+.section-hand {
+  background: var(--hand-bg);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+}
+
 .hand {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
@@ -605,6 +614,8 @@ button {
 
   .section-hand {
     flex: none;
+    /* 下地の色を敷いているぶん、広い画面では上下の余白を揃える */
+    padding-bottom: 14px;
   }
 
   .section-supply {
