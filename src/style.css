@@ -7,6 +7,9 @@
   --accent: #2f6f3e;
   --warning-bg: #fbe9e7;
   --warning-text: #8a2c22;
+
+  /* カード1枚の最小幅。画面が広いほど列を増やすため、幅は画面側で切り替える */
+  --card-min: 100px;
 }
 
 * {
@@ -266,6 +269,8 @@ button {
 }
 
 .web-svg {
+  /* 幅の広い画面で viewBox が拡大され、ラベルが巨大化するのを防ぐ */
+  max-width: 360px;
   width: 100%;
   height: auto;
   display: block;
@@ -385,7 +390,7 @@ button {
 
 .hand {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
   gap: 6px;
 }
 
@@ -408,7 +413,7 @@ button {
 
 .supply-row-cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
   gap: 6px;
 }
 
@@ -501,4 +506,164 @@ button {
   padding-bottom: max(10px, env(safe-area-inset-bottom));
   display: flex;
   justify-content: center;
+}
+
+/*
+ * 手札と供給をまとめる箱。狭い画面では透過させ、.game-scroll の直下に
+ * 食物網・場・手札・供給が並ぶ従来どおりの流れにする。
+ * 広い画面ではこの箱ごと2カラムの右側になる (下のメディアクエリ)。
+ */
+.game-col-main {
+  display: contents;
+}
+
+/* ==========================================================================
+ * 画面が広いとき
+ *
+ * 基準は 360px の縦画面のまま。ここから下はメディアクエリでの上積みだけで、
+ * 狭い画面の見え方には影響しない。
+ * ========================================================================== */
+
+/* ---------- 中間幅 (タブレット・小さめのウィンドウ) ---------- */
+
+/*
+ * 1カラムのまま、カードの列だけ増やす。
+ * 幅が広がるほど1枚が横に伸びて、中の文字とちぐはぐになるのを防ぐ。
+ */
+@media (min-width: 600px) {
+  :root {
+    --card-min: 130px;
+  }
+}
+
+/* ---------- PC (2カラム) ---------- */
+
+/*
+ * 左に「見るもの」(食物網・場・ログ)、右に「触るもの」(手札・供給) を分ける。
+ * 1カラムのままだと縦に約3.7画面ぶん伸びて、毎フェイズ大きくスクロールさせられる。
+ *
+ * .game-scroll を display: contents で透過させ、その子を .screen-game の
+ * グリッドへ直接載せている。こうするとログだけを左カラムへ移せる。
+ * ログは狭い画面ではスクロール領域の外に固定する必要があり (.log の意図を参照)、
+ * DOM 上は .game-scroll の外に置いたまま動かせないため。
+ */
+@media (min-width: 900px) {
+  :root {
+    --card-min: 150px;
+  }
+
+  /* #app の display: flex (ID セレクタ) に負けるため、ここも #app 付きで指定する */
+  #app.screen-game {
+    display: grid;
+    /* 左は食物網の SVG (viewBox 幅 300) が縮まない程度に取り、残りを右へ回す */
+    grid-template-columns: minmax(280px, 340px) 1fr;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "header header"
+      "web    main"
+      "field  main"
+      "log    main"
+      "bar    bar";
+  }
+
+  .game-scroll {
+    display: contents;
+  }
+
+  .game-header {
+    grid-area: header;
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .header-row-sub {
+    font-size: 12px;
+  }
+
+  .section-web {
+    grid-area: web;
+  }
+
+  .section-field {
+    grid-area: field;
+  }
+
+  /*
+   * 右カラム。手札は高さぶんだけ取り、余りを供給に渡してそこだけスクロールさせる。
+   * 手札と供給を別々のグリッド行に置くと、左の食物網の高さに引きずられて
+   * 手札の下に大きな余白ができるため、ひとつの箱にまとめて縦に積む。
+   */
+  .game-col-main {
+    grid-area: main;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    /* 左右の境目 */
+    border-left: 1px solid var(--border);
+  }
+
+  .section-hand {
+    flex: none;
+  }
+
+  .section-supply {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: 10px;
+  }
+
+  .advance-bar {
+    grid-area: bar;
+    padding: 12px;
+  }
+
+  .section {
+    padding-top: 14px;
+  }
+
+  .section h2 {
+    font-size: 14px;
+  }
+
+  .game-col-main .section {
+    padding-left: 20px;
+  }
+
+  /* ログは左カラムの箱にする。下線のままだと右カラムまで伸びない中途半端な線になる */
+  .log {
+    grid-area: log;
+    align-self: start;
+    margin: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px 8px;
+    font-size: 12px;
+  }
+
+  .log-summary,
+  .log-entry {
+    font-size: 12px;
+  }
+
+  /* 縦に余裕があるので、狭い画面より多くの行を出す */
+  .log-list {
+    max-height: 220px;
+  }
+
+  /* ---------- 広い画面でのタイトル・結果・ダイアログ ---------- */
+
+  .screen-result {
+    align-items: center;
+    text-align: center;
+  }
+
+  .dialog {
+    max-width: 520px;
+  }
+
+  .prey-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }

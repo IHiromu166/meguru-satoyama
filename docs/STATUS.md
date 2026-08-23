@@ -45,6 +45,7 @@ Claude Code と Codex の**分業をやめた**。以降は単一の作業者が
 | 食物網ピラミッドの常時表示 (インライン SVG) | 動く |
 | 直近8件のログ欄 (侵入・増殖・捕食・飢餓・崩壊) | 動く |
 | PWA (ホーム画面へ追加 / オフライン起動) | 実装済み ※実機未確認 |
+| 幅 900px 以上での2カラムレイアウト | 動く (2026-08-23 追加) |
 
 ### 実装状況
 
@@ -52,7 +53,7 @@ Claude Code と Codex の**分業をやめた**。以降は単一の作業者が
 | --- | --- | --- |
 | core | `src/core/{state,engine,predation,effects,invasion,score,rng,cards,types}.ts` | 実装完了 |
 | データ | `src/data/{cards,invasives,supply}.ts` | 30種すべて実装 (在来22 + 駆除3 + 外来5) |
-| UI | `src/ui/{app,hand,supply,web,screens,theme}.ts` + `src/style.css` | 実装完了 (計 約1,400行) |
+| UI | `src/ui/{app,hand,supply,web,screens,theme}.ts` + `src/style.css` | 実装完了。幅で1カラム / 2カラムを切り替える (下記) |
 | PWA | `public/{manifest.webmanifest,icon.svg}` + `vite.config.ts` の SW 生成 | 実装完了 |
 | テスト | `tests/core.test.ts` / `tests/playthrough.test.ts` | 17件。カバレッジに穴あり (下記) |
 
@@ -60,6 +61,30 @@ core の公開 API は `createGame` / `playCard` / `gainCard` / `advancePhase` /
 `legalPreys` / `needsPrey` / `scoreOf` / `trophicCounts` / `invasionPressure`。
 UI からは `src/core/engine.ts` 経由でのみ呼ぶ。UI に残っているルール由来の数値は
 ヘッダの「ターン n / **20**」だけで、これは `engine.ts` の `turn >= 20` と二重になっている。
+
+### 画面幅ごとのレイアウト (2026-08-23)
+
+基準は従来どおり 360px の縦画面。広い画面はメディアクエリでの上積みだけで、
+狭い画面の見え方は変えていない。
+
+| 幅 | レイアウト |
+| --- | --- |
+| 〜599px | 1カラム。ヘッダとログを上に固定し、中央だけスクロール (従来どおり) |
+| 600〜899px | 1カラムのまま、カードの列数だけ増やす |
+| 900px〜 | **2カラム。** 左が食物網・場・ログ、右が手札・供給。スクロールするのは供給だけ |
+
+- カードの並びは固定3列をやめ、`repeat(auto-fill, minmax(var(--card-min), 1fr))` に変えた。
+  `--card-min` は 100px → 130px → 150px と幅に応じて上げる。360px では従来と同じ3列になる。
+- 食物網の SVG に `max-width: 360px` を掛けた。これがないと幅いっぱいまで
+  引き伸ばされ、viewBox ごと拡大されてラベルが巨大化する。
+- 2カラムは `.game-scroll` を `display: contents` で透過させ、その子を
+  `.screen-game` のグリッドへ直接載せて組んでいる。こうするとログだけを左カラムへ移せる。
+  ログは狭い画面ではスクロール領域の外に固定する必要があり、DOM 上は動かせないため。
+- 手札と供給は `div.game-col-main` でまとめてある (`src/ui/app.ts`)。
+  別々のグリッド行に置くと左の食物網の高さに引きずられ、手札の下に余白ができる。
+  狭い画面ではこの箱を `display: contents` で透過させるので、並びは従来と変わらない。
+- グリッド指定は `#app.screen-game` で書いてある。`#app { display: flex }` が
+  ID セレクタで詳細度が高く、`.screen-game { display: grid }` では負けるため。
 
 ---
 
@@ -82,6 +107,12 @@ UI からは `src/core/engine.ts` 経由でのみ呼ぶ。UI に残っている�
   `[vite] connected.` が出ること、`src/style.css` の編集がリロードなしで
   (`[vite] hot updated`) 反映されること、`src/main.ts` の編集ではページが
   自動リロードされることを確認。
+- **2026-08-23、PC 向け2カラムをヘッドレス Edge で確認した。**
+  1440×900 / 1280×720 / 900×700 (切り替えの境目) で2カラムになること、
+  スクロールするのが供給だけであること、6ターン進めてログ・場・侵入圧の表示が
+  左カラムに収まること、捕食対象ダイアログと結果画面が崩れないことを確認。
+  700×900 (1カラム) と 360×640 でも確認し、**360px の見え方は変更前と一致**
+  (カード幅 108px の3列、横のはみ出しなし)。全幅で `scrollWidth === clientWidth`。
 
 ### 未確認・未実施
 
@@ -159,6 +190,10 @@ npx vite preview --port 4183 --strictPort --host 127.0.0.1
 `Emulation.setDeviceMetricsOverride` (360×640, mobile) → `Runtime.evaluate` でボタンを click →
 `Page.captureScreenshot`。はみ出しは `scrollWidth - clientWidth` で測る。
 ボタンの文言は「はじめる」「〜フェイズへ」「クリーンアップへ」「次のターンへ」「結果を見る」。
+
+同じ手順は `npm run dev` (5180) に向けても使える。PC の 2カラムはこちらで確認した。
+ただし **`mv` でファイルを差し替えると Vite の watcher が inode を見失い、
+古い CSS を配り続ける**。編集は追記か上書き (`cat tmp > src/style.css`) で行う。
 
 ---
 

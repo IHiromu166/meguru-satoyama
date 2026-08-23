@@ -175,6 +175,9 @@ function renderLog(s: GameState): HTMLElement {
 /**
  * ゲーム画面は「ヘッダ + ログ (固定) / 本体 (スクロール) / フェイズ送り (固定)」の3段。
  * 送りボタンは唯一の進行手段なので、供給リストの下までスクロールしないと押せない状態を避ける。
+ *
+ * DOM はこの1通りだけで、幅 900px 以上では CSS 側が左右2カラムに組み替える
+ * (左: 食物網・場・ログ / 右: 手札・供給)。詳細は docs/STATUS.md「画面幅ごとのレイアウト」。
  */
 function renderGameScreen(container: HTMLElement, s: GameState): void {
   container.className = "screen screen-game";
@@ -192,14 +195,20 @@ function renderGameScreen(container: HTMLElement, s: GameState): void {
   scroll.appendChild(field.root);
   renderField(s, field.body);
 
+  // 手札と供給は「触るもの」。広い画面では2カラムの右側へまとめて寄せるので、
+  // ひとつの箱に入れておく (狭い画面では display: contents で透過させ、並びは変わらない)。
+  const main = document.createElement("div");
+  main.className = "game-col-main";
+  scroll.appendChild(main);
+
   const hand = section("section-hand", "手札");
-  scroll.appendChild(hand.root);
+  main.appendChild(hand.root);
   renderHand(s, hand.body, {
     onPlay: (uid, preyUid) => setState(playCard(s, uid, preyUid)),
   });
 
   const supply = section("section-supply", "供給");
-  scroll.appendChild(supply.root);
+  main.appendChild(supply.root);
   renderSupply(s, supply.body, {
     onGain: (defId) => setState(gainCard(s, defId)),
   });
