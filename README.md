@@ -48,6 +48,21 @@
 初回の読み込み後は、ゲーム本体のファイルを端末に保存するため、オフラインでも起動できます。
 更新を反映するには、オンラインで一度ページを再読み込みしてください。
 
+## 公開
+
+`main` に push すると GitHub Actions ([.github/workflows/deploy.yml](.github/workflows/deploy.yml))
+が型検査・テスト・ビルドを回し、通れば GitHub Pages に公開する。
+型検査かテストが落ちた場合は公開されない。
+
+公開先: <https://ihiromu166.github.io/meguru-satoyama/>
+
+**初回だけ**、リポジトリの Settings → Pages → Build and deployment → Source を
+「GitHub Actions」にする操作が要る (ここだけは手作業)。
+
+アセットのパスはすべて相対にしてある (`vite.config.ts` の `base: "./"`、
+manifest の `start_url` / `scope`、Service Worker の登録と precache)。
+GitHub Pages のようなサブパス配信でも動き、後でルート配信へ移しても直す必要はない。
+
 ## ドキュメント
 
 | 文書 | 内容 |

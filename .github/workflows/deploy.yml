@@ -1,0 +1,55 @@
+# main への push で GitHub Pages に公開する。
+# 公開先は https://<ユーザー名>.github.io/<リポジトリ名>/ というサブパスになるので、
+# vite.config.ts の base は "./" (相対パス) にしてある。
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # 手動でも流せるようにしておく (コードを変えずに再デプロイしたいとき)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同時に複数のデプロイが走らないようにする。
+# 走行中のものは中断せず、順番に流す (公開物が中途半端な状態になるのを避ける)
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Vite 7 の要求 (Node 20.19+ / 22.12+) を満たすもの
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      # 型検査とテストが落ちたら公開しない
+      - run: npx tsc -b
+      - run: npm test
+
+      - run: npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
