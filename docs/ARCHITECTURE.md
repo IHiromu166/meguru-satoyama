@@ -23,9 +23,11 @@
 src/
   core/                 純粋ロジック。DOM 非依存
     types.ts            型定義。全モジュールの契約
+    rules.ts            ルール由来の定数 (ターン数・手札枚数・配点・侵入スケジュール)
     rng.ts              シード付き乱数
     state.ts            GameState の生成・ゾーン操作
-    engine.ts           フェイズ遷移とコマンド適用
+    cards.ts            defId からカード定義を引く (cardDefinition)
+    engine.ts           フェイズ遷移とコマンド適用。UI 向けの唯一の入口
     predation.ts        捕食判定
     effects.ts          効果の解決
     invasion.ts         侵入・増殖・敗北判定
@@ -40,6 +42,8 @@ src/
     supply.ts           供給の UI
     web.ts              食物網 / ピラミッドの SVG 可視化
     screens.ts          タイトル・結果画面
+    help.ts             遊び方 (ルールと操作方法) のオーバーレイ
+    theme.ts            配色・段階名など表示上の共通部品
   main.ts               エントリポイント
   style.css
 tests/
@@ -210,9 +214,28 @@ export function scoreOf(s: GameState): ScoreBreakdown;
 
 /** 段階ごとのカード枚数。可視化とスコアの両方で使う */
 export function trophicCounts(s: GameState): Record<Trophic, number>;
+
+/** 指定ターンに加算される侵入圧 (1ターンあたりの枚数) */
+export function invasionPressure(turn: number): number;
+
+/** 指定ターンまでに解禁されている外来種の id。解禁は累積する */
+export function unlockedInvasives(turn: number): string[];
+
+// ---- ルール由来の定数 (実体は core/rules.ts) ----
+
+export const TURN_LIMIT: number;        // 生存とみなすターン数
+export const HAND_SIZE: number;         // クリーンアップで引く枚数
+export const GAINS_PER_TURN: number;    // 1ターンの基本の獲得回数
+export const SCORE_WEIGHTS: { ... };    // 最終スコアの配点
+export const CYCLING_RATIO: { min; max };  // 「循環効率」で加点される分解者の比率
+export const INVASION_SCHEDULE: readonly InvasionStage[];  // 侵入スケジュール
 ```
 
-UI からはこの9つだけを呼ぶ。UI が `GameState` のフィールドを直接書き換えることは禁止。
+UI が呼んでよいのはここに挙げたものだけ。`GameState` のフィールドを直接書き換えることは禁止。
+
+**ルール由来の数値を UI 側に書かない。** 「20ターン」「手札5枚」「多様性 ×2」のような
+ルールが決めた数はすべて `core/rules.ts` に置き、core も UI もそこから読む
+(遊び方の画面 `ui/help.ts` もこの定数から文面を組み立てている)。
 
 ---
 

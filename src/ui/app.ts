@@ -1,8 +1,18 @@
-import { advancePhase, createGame, gainCard, invasionPressure, playCard, scoreOf } from "../core/engine";
+import {
+  advancePhase,
+  createGame,
+  gainCard,
+  invasionPressure,
+  playCard,
+  scoreOf,
+  TURN_LIMIT,
+} from "../core/engine";
 import type { GameState, Phase } from "../core/types";
 import { renderField, renderHand } from "./hand";
+import { openHelp } from "./help";
 import { renderResult, renderTitle } from "./screens";
 import { renderSupply } from "./supply";
+import { invasionPressureLabel } from "./theme";
 import { renderWeb } from "./web";
 
 const PHASE_LABEL: Record<Phase, string> = {
@@ -23,21 +33,6 @@ const NEXT_PHASE_LABEL: Record<Phase, string> = {
 
 /** ログの表示件数。360px の画面を圧迫しない範囲に絞り、残りは開いてスクロールさせる */
 const LOG_VISIBLE = 8;
-
-/**
- * 侵入圧の表示。侵入スケジュールの閾値は core の invasionPressure が持っているので、
- * ここは 1ターンあたりの加算量を日本語のラベルに直すだけにする (docs/REVIEW.md B-5)。
- */
-function invasionPressureLabel(turn: number): string {
-  const pressure = invasionPressure(turn);
-  if (pressure <= 0) {
-    return "侵入圧 なし";
-  }
-  if (pressure < 1) {
-    return `侵入圧 ${Math.round(1 / pressure)}ターンに1体`;
-  }
-  return `侵入圧 1ターンに${pressure}体`;
-}
 
 let state: GameState | null = null;
 let root: HTMLElement | null = null;
@@ -110,11 +105,20 @@ function renderHeader(s: GameState): HTMLElement {
   const main = document.createElement("div");
   main.className = "header-row";
   main.append(
-    headerItem(`ターン ${s.turn} / 20`),
+    headerItem(`ターン ${s.turn} / ${TURN_LIMIT}`),
     headerItem(PHASE_LABEL[s.phase]),
     headerItem(`エネルギー ${s.energy}`),
     headerItem(`獲得 ${s.gainsLeft}`),
   );
+
+  // 遊び方。プレイ中に迷ったとき、盤面を失わずに開けるようにしておく
+  const help = document.createElement("button");
+  help.type = "button";
+  help.className = "header-help";
+  help.textContent = "遊び方";
+  help.setAttribute("aria-label", "遊び方を開く");
+  help.addEventListener("click", openHelp);
+  main.appendChild(help);
 
   const deck = document.createElement("div");
   deck.className = "header-row header-row-sub";
@@ -122,7 +126,7 @@ function renderHeader(s: GameState): HTMLElement {
     headerItem(`山札 ${s.deck.length}`),
     headerItem(`捨て札 ${s.discard.length}`),
     headerItem(`廃棄 ${s.trash.length}`),
-    headerItem(invasionPressureLabel(s.turn)),
+    headerItem(`侵入圧 ${invasionPressureLabel(invasionPressure(s.turn))}`),
   );
 
   header.append(main, deck);

@@ -667,3 +667,246 @@ button {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* ==========================================================================
+ * 遊び方 (ヘルプ)
+ * ========================================================================== */
+
+/* タイトル画面の「遊び方」。はじめるより一段弱く見せる */
+.secondary-button {
+  background: none;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+/* ゲーム中の「遊び方」。ヘッダ1段目の右端に寄せる */
+.header-help {
+  margin-left: auto;
+  flex: none;
+  align-self: center;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.header-help:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/*
+ * 本文が長いので、捕食対象の選択ダイアログ (.dialog) とは別に、
+ * 画面をほぼ占有してパネルの中だけをスクロールさせる。
+ */
+.help-overlay {
+  align-items: stretch;
+  padding: 8px;
+}
+
+.help-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin: auto;
+  max-height: 100%;
+  background: var(--surface);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.help-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.help-title {
+  margin: 0;
+  font-size: 15px;
+}
+
+.help-close {
+  flex: none;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  min-height: 36px;
+  cursor: pointer;
+}
+
+.help-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 14px 16px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.help-section {
+  margin-top: 18px;
+}
+
+.help-heading {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+}
+
+.help-subheading {
+  margin: 12px 0 4px;
+  font-size: 13px;
+}
+
+.help-body p {
+  margin: 6px 0;
+}
+
+/* 節の一行目。ここだけ読めば何の節か分かるようにする */
+.help-lead {
+  font-weight: 700;
+}
+
+/* 中核ルールの一文。枠で囲って本文から浮かせる */
+.help-rule {
+  margin: 8px 0;
+  padding: 8px 10px;
+  background: var(--bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+  font-weight: 700;
+}
+
+.help-note {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.help-list {
+  margin: 6px 0;
+  padding-left: 1.2em;
+}
+
+.help-list li {
+  margin-bottom: 4px;
+}
+
+.help-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 6px 0;
+}
+
+.help-table th,
+.help-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 5px 6px 5px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.help-table th {
+  white-space: nowrap;
+  color: var(--muted);
+  font-weight: 700;
+  width: 1%;
+  padding-right: 12px;
+}
+
+/* デッキと生態系の対応。左右が対になっていることを見せたいので中央寄せにする */
+.help-mapping th {
+  width: 40%;
+  text-align: right;
+  color: var(--text);
+}
+
+.help-mapping td {
+  color: var(--accent);
+}
+
+.help-schedule th {
+  width: auto;
+  padding-right: 8px;
+}
+
+.help-schedule-turn {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 栄養段階の並び。食物網の可視化と同じ色を使う */
+.help-stages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 8px 0;
+}
+
+.help-stage {
+  border: 2px solid var(--stage-color, var(--border));
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.help-stage-arrow {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.help-invasives li {
+  margin-bottom: 6px;
+}
+
+.help-invasive-name {
+  color: var(--stage-color, var(--text));
+}
+
+/* ---------- 広い画面での遊び方 ---------- */
+
+@media (min-width: 900px) {
+  .help-overlay {
+    padding: 24px;
+  }
+
+  .help-panel {
+    max-width: 940px;
+    max-height: 100%;
+  }
+
+  .help-body {
+    padding: 4px 20px 20px;
+    /*
+     * 縦に長い1本の文章だと PC では読みにくいので2段組にする。
+     * 節の途中で段が変わらないよう break-inside を止める。
+     */
+    columns: 2;
+    column-gap: 28px;
+  }
+
+  .help-section {
+    break-inside: avoid;
+    margin-top: 0;
+    margin-bottom: 20px;
+  }
+}

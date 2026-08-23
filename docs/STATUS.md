@@ -46,21 +46,26 @@ Claude Code と Codex の**分業をやめた**。以降は単一の作業者が
 | 直近8件のログ欄 (侵入・増殖・捕食・飢餓・崩壊) | 動く |
 | PWA (ホーム画面へ追加 / オフライン起動) | 実装済み ※実機未確認 |
 | 幅 900px 以上での2カラムレイアウト | 動く (2026-08-23 追加) |
+| 遊び方 (ルールと操作方法) の画面 | 動く (2026-08-23 追加)。タイトルとゲーム中の両方から開く |
 
 ### 実装状況
 
 | 領域 | ファイル | 状態 |
 | --- | --- | --- |
-| core | `src/core/{state,engine,predation,effects,invasion,score,rng,cards,types}.ts` | 実装完了 |
+| core | `src/core/{state,engine,predation,effects,invasion,score,rng,cards,rules,types}.ts` | 実装完了 |
 | データ | `src/data/{cards,invasives,supply}.ts` | 30種すべて実装 (在来22 + 駆除3 + 外来5) |
-| UI | `src/ui/{app,hand,supply,web,screens,theme}.ts` + `src/style.css` | 実装完了。幅で1カラム / 2カラムを切り替える (下記) |
+| UI | `src/ui/{app,hand,supply,web,screens,help,theme}.ts` + `src/style.css` | 実装完了。幅で1カラム / 2カラムを切り替える (下記) |
 | PWA | `public/{manifest.webmanifest,icon.svg}` + `vite.config.ts` の SW 生成 | 実装完了 |
 | テスト | `tests/core.test.ts` / `tests/playthrough.test.ts` | 17件。カバレッジに穴あり (下記) |
 
 core の公開 API は `createGame` / `playCard` / `gainCard` / `advancePhase` / `canPlay` /
-`legalPreys` / `needsPrey` / `scoreOf` / `trophicCounts` / `invasionPressure`。
-UI からは `src/core/engine.ts` 経由でのみ呼ぶ。UI に残っているルール由来の数値は
-ヘッダの「ターン n / **20**」だけで、これは `engine.ts` の `turn >= 20` と二重になっている。
+`legalPreys` / `needsPrey` / `scoreOf` / `trophicCounts` / `invasionPressure` /
+`unlockedInvasives` と、`core/rules.ts` の定数 (`TURN_LIMIT` / `HAND_SIZE` /
+`GAINS_PER_TURN` / `SCORE_WEIGHTS` / `CYCLING_RATIO` / `INVASION_SCHEDULE`)。
+UI からは `src/core/engine.ts` 経由でのみ呼ぶ。
+
+**ルール由来の数値が UI に直書きされている箇所はもう無い** (2026-08-23)。
+「ターン n / 20」も遊び方の画面も `core/rules.ts` の定数から組み立てている。
 
 ### 画面幅ごとのレイアウト (2026-08-23)
 
@@ -113,6 +118,10 @@ UI からは `src/core/engine.ts` 経由でのみ呼ぶ。UI に残っている�
   左カラムに収まること、捕食対象ダイアログと結果画面が崩れないことを確認。
   700×900 (1カラム) と 360×640 でも確認し、**360px の見え方は変更前と一致**
   (カード幅 108px の3列、横のはみ出しなし)。全幅で `scrollWidth === clientWidth`。
+- **2026-08-23、遊び方の画面をヘッドレス Edge で確認した。**
+  タイトルとゲーム中の両方から開くこと、7節すべてが描画されること、
+  1440×900 では2段組・360×640 では1段でパネル内だけがスクロールすること、
+  侵入スケジュールと配点が `core/rules.ts` の値どおりに出ることを確認。
 
 ### 未確認・未実施
 
@@ -151,9 +160,11 @@ UI からは `src/core/engine.ts` 経由でのみ呼ぶ。UI に残っている�
 3. **実機での通しプレイ** — PWA のインストールとオフライン起動もここで確認する。
 4. **REVIEW.md C-7 の整理** — `core/state.ts` の `supplyOf` と `data/supply.ts` の
    `createSupply` が二重化。`findCard` / `moveCard` は未使用 export。
-5. **ARCHITECTURE.md の追補** — `src/core/cards.ts` (`cardDefinition`) と `invasionPressure` が
-   第2節の構成表と第4節の公開 API 一覧に載っていない。
-6. (任意) Electron 化。
+5. (任意) Electron 化。
+
+> **2026-08-23 完了**: 「ARCHITECTURE.md の追補」は済んだ。第2節の構成表に
+> `core/cards.ts` `core/rules.ts` `ui/help.ts` `ui/theme.ts` を、第4節の公開 API に
+> `invasionPressure` `unlockedInvasives` とルール定数を追記した。
 
 ---
 

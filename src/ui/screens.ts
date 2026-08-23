@@ -1,4 +1,5 @@
 import type { GameState, ScoreBreakdown } from "../core/types";
+import { openHelp } from "./help";
 
 function randomSeed(): number {
   return Math.floor(Math.random() * 2 ** 31);
@@ -62,6 +63,13 @@ export function renderTitle(container: HTMLElement, onStart: (seed: number) => v
   });
 
   container.appendChild(form);
+
+  const help = document.createElement("button");
+  help.type = "button";
+  help.className = "secondary-button";
+  help.textContent = "遊び方";
+  help.addEventListener("click", openHelp);
+  container.appendChild(help);
 }
 
 const SCORE_ROWS: Array<{ key: keyof ScoreBreakdown; label: string }> = [
