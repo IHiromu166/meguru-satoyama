@@ -208,12 +208,56 @@ npx vite preview --port 4183 --strictPort --host 127.0.0.1
 
 ---
 
+## 公開 (デプロイ) — 2026-08-24
+
+`main` に push すると [.github/workflows/deploy.yml](../.github/workflows/deploy.yml) が
+型検査 → テスト → ビルドを回し、通れば GitHub Pages に公開する。
+公開先は <https://ihiromu166.github.io/meguru-satoyama/>。
+
+### 残っている手作業 (ユーザー側)
+
+1. **リポジトリを公開にする。** 現在 private で、GitHub Pages は
+   private リポジトリでは有料プラン (GitHub Pro 以上) でないと使えない。
+2. **Settings → Pages → Build and deployment → Source を「GitHub Actions」にする。**
+   ここが未設定だと、ワークフローの deploy ジョブが失敗する。
+
+この2つが済むまで公開は完了しない。ワークフロー自体は push 済みなので、
+設定後は Actions タブから手動実行 (Run workflow) すれば公開できる。
+
+### サブパス対応でやったこと
+
+GitHub Pages のプロジェクトサイトは `/<リポジトリ名>/` の下に置かれる。
+以前は配信パスがすべて絶対 (`/assets/...`、`/sw.js`、`start_url: "/"`) だったため、
+ルート以外に置くと全ファイルが 404 になり PWA ごと動かなかった。
+
+`vite.config.ts` の `base: "./"` を軸に、index.html・manifest・Service Worker の
+登録と precache をすべて相対パスへ変えた。**リポジトリ名は埋め込んでいない**ので、
+後でルート配信 (独自ドメイン等) へ移しても直す必要はない。
+
+### 検証したこと
+
+`dist` を `<一時ディレクトリ>/meguru-satoyama/` に置いて自前の静的サーバで配信し、
+GitHub Pages と同じサブパス構成をローカルで再現して確認した (2026-08-24)。
+
+- 全アセット (index / manifest / icon / sw / assets 配下) が 200。失敗リクエストゼロ、
+  console.error ゼロ
+- Service Worker のスコープが `/meguru-satoyama/` になり active になる
+- タイトル → ゲーム画面まで描画され、2カラム・手札5枚・供給25種が出る
+- **オフライン起動が動く。** 静的サーバのプロセスを止め (接続不可を確認したうえで)
+  再読み込みしても、キャッシュ済みの6ファイルだけで起動しゲームが遊べる
+- `npm run dev` (5180) も従来どおり動く。`base: "./"` は dev では `/` として扱われる
+
+未確認: **実際の GitHub Pages 上での動作**。上記2つの手作業が済むまで確認できない。
+
+---
+
 ## リポジトリの状態
 
 | 項目 | 値 |
 | --- | --- |
 | 作業ブランチ | `main` のみ。以降のコミットはここに直接載せる |
-| `origin/main` | **未 push。** ローカルの `main` が大きく先行している (`git log --oneline origin/main..main`) |
+| `origin/main` | **push 済み** (2026-08-24、`b585c2e`)。以降は push するたび Pages のデプロイが走る |
+| リポジトリの公開範囲 | **private。** GitHub Pages を使うには公開にするか GitHub Pro が要る (下記) |
 | 未取り込みのブランチ | なし (`claude/ui` `codex/pwa` `codex/core` `codex/clarify-branch-rules` すべて main に入っている) |
 | worktree | `d:\git\game` (main) / `d:\git\game-claude` / `d:\git\game-codex` ← 後者2つは削除待ち |
 
