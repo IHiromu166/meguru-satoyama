@@ -91,9 +91,10 @@ worktree による分離とトラック分担 (トラックA / トラックB) �
 
 ```
 npm install
-npm run dev      # http://127.0.0.1:5180
-npm run build    # tsc -b && vite build
-npm test         # vitest run
+npm run dev        # http://127.0.0.1:5180 — PC のブラウザで見る (HMR あり)
+npm run dev:tunnel # スマホから tailscale serve (:8443) 経由で見るとき
+npm run build      # tsc -b && vite build
+npm test           # vitest run
 ```
 
 幅 360px の自動確認 (ヘッドレス Edge を CDP で叩く手順) は [docs/STATUS.md](docs/STATUS.md)、

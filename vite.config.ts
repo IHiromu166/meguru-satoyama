@@ -60,7 +60,10 @@ self.addEventListener("fetch", (event) => {
   };
 }
 
-export default defineConfig({
+// `npm run dev` は PC のブラウザ (http://127.0.0.1:5180) から直接見るための設定。
+// スマートフォンから tailscale serve 経由で見るときは `npm run dev:tunnel`
+// (= `vite --mode tunnel`) を使う。違いは HMR の接続先ポートだけ。
+export default defineConfig(({ mode }) => ({
   plugins: [offlineCachePlugin()],
   server: {
     // 明示しないと [::1] (IPv6) だけを掴み、tailscale serve の転送先である
@@ -73,11 +76,13 @@ export default defineConfig({
     strictPort: true,
     // ts.net 経由のアクセスが "Blocked request" で弾かれるのを防ぐ
     allowedHosts: [".ts.net"],
-    // ブラウザから見えるポートは 8443。合わせないと HMR だけ繋がらない
-    hmr: { clientPort: 8443 },
+    // tunnel モードではブラウザから見えるポートが 8443 (tailscale serve) になる。
+    // 合わせないと HMR だけ繋がらない。PC から直接見る通常の dev では
+    // dev server と同じ 5180 に繋がせる (true = 既定の推測に任せる)
+    hmr: mode === "tunnel" ? { clientPort: 8443 } : true,
   },
   test: {
     include: ["tests/**/*.test.ts"],
     passWithNoTests: true,
   },
-});
+}));

@@ -77,6 +77,11 @@ UI からは `src/core/engine.ts` 経由でのみ呼ぶ。UI に残っている�
   11ターン目の崩壊から結果画面まで到達すること、ページが縦にも横にもはみ出さないことを確認。
 - Android 実機からの接続経路 (Tailscale + dev server) は 2026-08-18 に確認済み
   ([MOBILE.md](./MOBILE.md) 第6節)。
+- **2026-08-23、PC のブラウザでの HMR を確認した。** `npm run dev` の
+  `http://127.0.0.1:5180` にヘッドレス Edge を CDP で繋ぎ、コンソールに
+  `[vite] connected.` が出ること、`src/style.css` の編集がリロードなしで
+  (`[vite] hot updated`) 反映されること、`src/main.ts` の編集ではページが
+  自動リロードされることを確認。
 
 ### 未確認・未実施
 
@@ -125,10 +130,16 @@ UI からは `src/core/engine.ts` 経由でのみ呼ぶ。UI に残っている�
 
 ```
 npm install
-npm run dev      # http://127.0.0.1:5180
-npm run build    # tsc -b && vite build
-npm test         # vitest run
+npm run dev        # http://127.0.0.1:5180 — PC のブラウザで見る (HMR あり)
+npm run dev:tunnel # スマホから tailscale serve (:8443) 経由で見るとき
+npm run build      # tsc -b && vite build
+npm test           # vitest run
 ```
+
+`dev` と `dev:tunnel` の違いは **HMR の接続先ポートだけ**。`dev:tunnel` は
+`vite --mode tunnel` で、ブラウザ側に 8443 (tailscale serve の待ち受け) へ繋がせる。
+PC から `127.0.0.1:5180` を直接見るときにこれを使うと、8443 に誰も居ないので
+**画面は出るが保存しても反映されない**。逆も同様なので、見る経路で使い分ける。
 
 実機での確認手順は [MOBILE.md](./MOBILE.md)。
 

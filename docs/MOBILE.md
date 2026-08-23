@@ -79,6 +79,11 @@ export default defineConfig({
 });
 ```
 
+**この `hmr.clientPort` は tunnel モード限定**にしてある。PC のブラウザから
+`http://127.0.0.1:5180` を直接見るときに 8443 へ繋ぎに行かせてはいけないので、
+実際の `vite.config.ts` では `mode === "tunnel" ? { clientPort: 8443 } : true` と書き、
+スマホ確認のときだけ `npm run dev:tunnel` (= `vite --mode tunnel`) で起動する。
+
 `hmr.clientPort` を忘れると、**画面は出るのに保存しても再読み込みされない**という
 分かりにくい壊れ方をする。コンソールに WebSocket の接続エラーが出ていたらこれ。
 
@@ -91,7 +96,7 @@ export default defineConfig({
 
 ## 3. 毎回の手順
 
-1. PC で `npm run dev`
+1. PC で `npm run dev:tunnel` (PC のブラウザだけで見るときは `npm run dev`)
 2. スマホの Tailscale が接続状態であることを確認
 3. ホーム画面のショートカットから開く
 
@@ -120,10 +125,10 @@ export default defineConfig({
 | 症状 | 確認すること |
 | --- | --- |
 | ページが開けない | スマホの Tailscale が接続中か。`tailscale status` に両端末が出るか |
-| 502 が返る | `npm run dev` が動いているか。`netstat -ano \| findstr :5180` の待ち受けが `[::1]` になっていないか (`server.host` の指定漏れ) |
+| 502 が返る | `npm run dev:tunnel` が動いているか。`netstat -ano \| findstr :5180` の待ち受けが `[::1]` になっていないか (`server.host` の指定漏れ) |
 | `Port 5180 is already in use` で起動しない | 前回の Vite が残っている。`Get-NetTCPConnection -LocalPort 5180 -State Listen` で PID を調べて落とす |
 | `Blocked request. This host is not allowed` | `server.allowedHosts` に `.ts.net` があるか |
-| 画面は出るが保存しても反映されない | `server.hmr.clientPort` が 8443 になっているか |
+| 画面は出るが保存しても反映されない | `npm run dev` ではなく `npm run dev:tunnel` で起動しているか (`hmr.clientPort` が 8443 になるのは tunnel モードだけ) |
 | 証明書エラー | Tailscale 管理画面で **HTTPS Certificates** が ON か |
 | PC からは見えるがスマホから見えない | `tailscale serve status` に 8443 の行があるか |
 
