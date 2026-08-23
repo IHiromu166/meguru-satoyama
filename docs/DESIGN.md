@@ -8,7 +8,7 @@
 - **企画版**: https://claude.ai/code/artifact/125944b3-7a49-4828-9190-79c49bf5246c
 
 実装の型定義・モジュール構成は [ARCHITECTURE.md](./ARCHITECTURE.md)、
-カードの数値は [CARDS.md](./CARDS.md)、作業分担は [TASKS.md](./TASKS.md) を参照。
+カードの数値は [CARDS.md](./CARDS.md)、残っている作業は [TASKS.md](./TASKS.md) を参照。
 
 ---
 

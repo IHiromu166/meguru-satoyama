@@ -53,7 +53,7 @@
 | 文書 | 内容 |
 | --- | --- |
 | [docs/STATUS.md](docs/STATUS.md) | **現在の開発状況。まずここを読む** |
-| [docs/TASKS.md](docs/TASKS.md) | 作業分担、ファイル所有権、着手の順序 (分業終了により大半が陳腐化) |
+| [docs/TASKS.md](docs/TASKS.md) | 残っている作業と、バランス調整の観点 |
 | [docs/DESIGN.md](docs/DESIGN.md) | ゲームのルールと、実装時に迷う箇所の裁定 |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 型定義、モジュール構成、core の公開 API |
 | [docs/CARDS.md](docs/CARDS.md) | 全30種のカードデータ |

@@ -28,14 +28,10 @@
 | C-6 definition() の重複 | A | 対応済み |
 | C-7 supply の重複 | A | **未対応** (下記のとおり担当を訂正) |
 
-**担当**は [TASKS.md](./TASKS.md) の「ファイル所有権」に従う。
-
-| トラック | 担当ファイル |
-| --- | --- |
-| A | `src/core/**`, `tests/**` |
-| B | `src/ui/**`, `src/data/**`, `src/main.ts`, `src/style.css`, `index.html` |
-
-担当外のファイルは読んでよいが書かない。直したい箇所があれば、この文書に追記して止める。
+> **2026-08-23**: Claude Code と Codex の分業を終了した。
+> 表と各項目の「担当」欄 (トラックA = `src/core/**` と `tests/**`、
+> トラックB = `src/ui/**` `src/data/**` `src/main.ts` `src/style.css` `index.html`) は
+> **当時の記録**であり、今後の担当分けではない。残件は単独の作業者が `main` で直す。
 
 ---
 
