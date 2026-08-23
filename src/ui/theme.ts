@@ -77,6 +77,21 @@ export const TROPHIC_STAGE_LABEL: Record<1 | 2 | 3 | 4, string> = {
   4: "頂点捕食者",
 };
 
+/**
+ * 侵入圧 (1ターンあたりに侵入する枚数) を日本語のラベルにする。
+ * 数値そのものは core の `invasionPressure` / `INVASION_SCHEDULE` から取り、
+ * ここは言い換えるだけにする (docs/REVIEW.md B-5)。
+ */
+export function invasionPressureLabel(pressure: number): string {
+  if (pressure <= 0) {
+    return "なし";
+  }
+  if (pressure < 1) {
+    return `${Math.round(1 / pressure)}ターンに1体`;
+  }
+  return `1ターンに${pressure}体`;
+}
+
 export function trophicColor(trophic: Exclude<Trophic, 0>): string {
   switch (trophic) {
     case 1:

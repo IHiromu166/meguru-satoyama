@@ -2,6 +2,7 @@ import { CARDS } from "../data/cards";
 import { INVASIVES } from "../data/invasives";
 import { INITIAL_DECK } from "../data/supply";
 import { shuffle } from "./rng";
+import { GAINS_PER_TURN, HAND_SIZE } from "./rules";
 import type { CardInstance, GameState, Zone } from "./types";
 
 export function createInitialState(seed: number): GameState {
@@ -11,10 +12,10 @@ export function createInitialState(seed: number): GameState {
     for (let index = 0; index < count; index += 1) initialCards.push({ uid: nextUid++, defId });
   }
   const shuffled = shuffle(seed, initialCards);
-  return drawCards({ turn: 1, phase: "main", result: "playing", energy: 0, gainsLeft: 1,
+  return drawCards({ turn: 1, phase: "main", result: "playing", energy: 0, gainsLeft: GAINS_PER_TURN,
     deck: shuffled.value, hand: [], field: [], discard: [], trash: [],
     supply: supplyOf(CARDS), invasivePool: supplyOf(INVASIVES), invasionCounter: 0,
-    rng: shuffled.state, nextUid, log: [] }, 5);
+    rng: shuffled.state, nextUid, log: [] }, HAND_SIZE);
 }
 
 function supplyOf(cards: readonly { id: string; supply: number }[]): Record<string, number> {

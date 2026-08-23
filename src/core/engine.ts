@@ -3,6 +3,7 @@ import { cardDefinition } from "./cards";
 import { resolveEffects } from "./effects";
 import { resolveInvasion, isCollapsed } from "./invasion";
 import { legalPreys as findLegalPreys, needsPrey as cardNeedsPrey } from "./predation";
+import { GAINS_PER_TURN, HAND_SIZE, TURN_LIMIT } from "./rules";
 import { scoreOf as calculateScore, trophicCounts as calculateTrophicCounts } from "./score";
 import { createInitialState, drawCards } from "./state";
 import type { CardInstance, GameState, ScoreBreakdown, Trophic } from "./types";
@@ -58,8 +59,8 @@ export function advancePhase(state: GameState): GameState {
   if (state.phase !== "cleanup") return state;
   let result = cleanup(state);
   if (isCollapsed(result)) return { ...result, phase: "over", result: "collapsed" };
-  if (state.turn >= 20) return { ...result, phase: "over", result: "survived" };
-  result = { ...result, turn: state.turn + 1, phase: "main", energy: 0, gainsLeft: 1 };
+  if (state.turn >= TURN_LIMIT) return { ...result, phase: "over", result: "survived" };
+  result = { ...result, turn: state.turn + 1, phase: "main", energy: 0, gainsLeft: GAINS_PER_TURN };
   return result;
 }
 
@@ -89,7 +90,21 @@ export function trophicCounts(state: GameState): Record<Trophic, number> {
   return calculateTrophicCounts(state);
 }
 
-export { invasionPressure } from "./invasion";
+export { invasionPressure, unlockedInvasives } from "./invasion";
+
+/**
+ * ルール由来の定数。UI にルールの数値を書かないため、表示側もここから読む。
+ * 実体は `src/core/rules.ts`。
+ */
+export {
+  CYCLING_RATIO,
+  GAINS_PER_TURN,
+  HAND_SIZE,
+  INVASION_SCHEDULE,
+  SCORE_WEIGHTS,
+  TURN_LIMIT,
+} from "./rules";
+export type { InvasionStage } from "./rules";
 
 function cleanup(state: GameState): GameState {
   let result = state;
@@ -108,6 +123,6 @@ function cleanup(state: GameState): GameState {
       result = log({ ...result, trash: [...result.trash, victim] }, `${def?.name ?? invasive.defId}が${cardDefinition(victim.defId)?.name ?? victim.defId}を捕食した (廃棄)`);
     }
   }
-  result = { ...result, discard: [...result.discard, ...result.field, ...result.hand], field: [], hand: [], energy: 0, gainsLeft: 1 };
-  return drawCards(result, 5);
+  result = { ...result, discard: [...result.discard, ...result.field, ...result.hand], field: [], hand: [], energy: 0, gainsLeft: GAINS_PER_TURN };
+  return drawCards(result, HAND_SIZE);
 }

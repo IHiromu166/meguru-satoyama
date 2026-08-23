@@ -1,4 +1,5 @@
 import { cardDefinition } from "./cards";
+import { CYCLING_RATIO, SCORE_WEIGHTS } from "./rules";
 import type { GameState, ScoreBreakdown, Trophic } from "./types";
 
 const deckCards = (state: GameState) => [state.deck, state.hand, state.field, state.discard].flat();
@@ -8,13 +9,13 @@ export function scoreOf(state: GameState): ScoreBreakdown {
   const cards = deckCards(state);
   const defs = cards.map((card) => cardDefinition(card.defId)).filter((card): card is NonNullable<typeof card> => Boolean(card));
   const counts = trophicCounts(state);
-  const diversity = new Set(defs.filter((card) => card.kind === "producer" || card.kind === "consumer" || card.kind === "decomposer").map((card) => card.id)).size * 2;
-  const pyramid = ([2, 3, 4] as const).filter((level) => counts[level] < counts[level - 1 as Trophic]).length * 5;
+  const diversity = new Set(defs.filter((card) => card.kind === "producer" || card.kind === "consumer" || card.kind === "decomposer").map((card) => card.id)).size * SCORE_WEIGHTS.diversity;
+  const pyramid = ([2, 3, 4] as const).filter((level) => counts[level] < counts[level - 1 as Trophic]).length * SCORE_WEIGHTS.pyramid;
   const decomposers = defs.filter((card) => card.kind === "decomposer").length;
-  const cycling = cards.length > 0 && decomposers / cards.length >= .1 && decomposers / cards.length <= .2 ? 10 : 0;
-  const apex = counts[4] >= 1 && counts[3] >= counts[4] ? 15 : 0;
-  const invasivePenalty = -defs.filter((card) => card.kind === "invasive").length * 5;
-  const controlPenalty = -defs.filter((card) => card.kind === "control").length;
+  const cycling = cards.length > 0 && decomposers / cards.length >= CYCLING_RATIO.min && decomposers / cards.length <= CYCLING_RATIO.max ? SCORE_WEIGHTS.cycling : 0;
+  const apex = counts[4] >= 1 && counts[3] >= counts[4] ? SCORE_WEIGHTS.apex : 0;
+  const invasivePenalty = defs.filter((card) => card.kind === "invasive").length * SCORE_WEIGHTS.invasive;
+  const controlPenalty = defs.filter((card) => card.kind === "control").length * SCORE_WEIGHTS.control;
   return { diversity, pyramid, cycling, apex, invasivePenalty, controlPenalty, total: diversity + pyramid + cycling + apex + invasivePenalty + controlPenalty };
 }
 

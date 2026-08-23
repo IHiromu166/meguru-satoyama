@@ -1,5 +1,6 @@
 import { cardDefinition } from "./cards";
 import { nextInt } from "./rng";
+import { INVASION_SCHEDULE, type InvasionStage } from "./rules";
 import type { CardInstance, GameState } from "./types";
 
 function addInvasive(state: GameState, allowed: readonly string[]): GameState {
@@ -15,13 +16,30 @@ function appendLog(state: GameState, text: string): GameState {
   return { ...state, log: [...state.log, { turn: state.turn, text }] };
 }
 
+/** そのターンに効いているスケジュールの段 */
+function stageAt(turn: number): InvasionStage {
+  let current = INVASION_SCHEDULE[0];
+  for (const stage of INVASION_SCHEDULE) if (turn >= stage.fromTurn) current = stage;
+  return current;
+}
+
 /** 指定ターンに加算される侵入圧 */
 export function invasionPressure(turn: number): number {
-  return turn < 4 ? 0 : turn < 9 ? 0.5 : 1;
+  return stageAt(turn).pressure;
+}
+
+/** 指定ターンまでに解禁されている外来種の id。解禁は累積する */
+export function unlockedInvasives(turn: number): string[] {
+  const ids: string[] = [];
+  for (const stage of INVASION_SCHEDULE) {
+    if (turn < stage.fromTurn) break;
+    ids.push(...stage.unlocks);
+  }
+  return ids;
 }
 
 export function resolveInvasion(state: GameState): GameState {
-  const allowed = state.turn < 9 ? ["seitaka", "ushigaeru"] : state.turn < 15 ? ["seitaka", "ushigaeru", "zarigani"] : ["seitaka", "ushigaeru", "zarigani", "bass", "araiguma"];
+  const allowed = unlockedInvasives(state.turn);
   const pressure = invasionPressure(state.turn);
   let result = { ...state, invasionCounter: state.invasionCounter + pressure };
   while (result.invasionCounter >= 1) {
