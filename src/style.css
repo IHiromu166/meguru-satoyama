@@ -12,6 +12,9 @@
 
   /* カード1枚の最小幅。画面が広いほど列を増やすため、幅は画面側で切り替える */
   --card-min: 100px;
+
+  /* カード1枚の縦横比。実物のカード (63 × 88mm) に合わせる */
+  --card-ratio: 63 / 88;
 }
 
 * {
@@ -302,25 +305,53 @@ button {
 }
 
 .chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   border: 2px solid var(--stage-color, var(--border));
   border-radius: 999px;
-  padding: 4px 10px;
+  padding: 3px 10px 3px 4px;
   font-size: 11px;
   background: var(--surface);
 }
 
+/* 場は名前が主役。絵柄は「どの生き物だったか」を思い出す手がかりに留める */
+.chip-art {
+  display: block;
+  width: 20px;
+  height: 14px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.chip-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 /* ---------- カード共通 (手札・供給・捕食選択で共有) ---------- */
 
+/*
+ * 実物のカードと同じ 63:88 に固定する (--card-ratio)。
+ * 中身が入りきらないときに縦へ伸びないよう overflow: hidden で切り落とし、
+ * 縮む余地は絵柄 (.card-art) だけに持たせる。効果文は縮ませない。
+ * 切れて読めなくなった分は button の title から読める (src/ui/card.ts)。
+ */
 .card {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  align-items: stretch;
+  gap: 3px;
+  aspect-ratio: var(--card-ratio);
+  overflow: hidden;
+  /* 効果文の級数をカード幅から決めるため (.card-text の cqw) */
+  container-type: inline-size;
   text-align: left;
   background: var(--surface);
   border: 2px solid var(--stage-color, var(--border));
-  border-radius: 8px;
-  padding: 5px 6px;
+  border-radius: 9px;
+  padding: 4px;
   cursor: pointer;
 }
 
@@ -330,52 +361,125 @@ button {
   cursor: not-allowed;
 }
 
-.card-cost {
-  align-self: flex-end;
-  background: var(--stage-color, var(--muted));
-  color: #fff;
-  border-radius: 999px;
-  min-width: 18px;
-  padding: 1px 6px;
-  font-size: 10px;
-  text-align: center;
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 3px;
 }
 
 .card-name {
   font-weight: 700;
-  font-size: 12px;
-  line-height: 1.25;
+  font-size: 11px;
+  line-height: 1.2;
+  /* 「セイタカアワダチソウ」のような長い名前でも2行に収める */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
-.card-stage {
+.card-cost {
+  flex: none;
+  background: var(--stage-color, var(--muted));
+  color: #fff;
+  border-radius: 999px;
+  min-width: 16px;
+  padding: 0 5px;
   font-size: 10px;
-  color: var(--muted);
+  line-height: 15px;
+  text-align: center;
 }
 
-.card-text {
-  font-size: 10px;
-  color: var(--muted);
+/* 絵柄。素材は使わず src/ui/art.ts が図形で描く。カードの中で縮むのはここだけ */
+.card-art {
+  position: relative;
+  flex: 0 1 auto;
+  aspect-ratio: 3 / 2;
+  /* 効果文が長いカードではここが縮む。潰れて意味が読めなくならない下限 */
+  min-height: 34px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--border);
+}
+
+.card-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 効果文を出さないカードでは、余った高さを絵柄が受け取る */
+.card-artless .card-art {
+  flex: 1 1 auto;
+}
+
+/* 絵柄に重ねる帯。カードの外に行を足さずに状態を出せる */
+.card-flag {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 1px 3px;
+  font-size: 9px;
+  line-height: 1.3;
+  text-align: center;
+  background: rgba(43, 42, 37, 0.72);
+  color: #fff;
+}
+
+.card-flag-warning {
+  background: var(--warning-text);
+}
+
+/*
+ * 捕食対象の選択で使う。同名のカードでも、場か手札かで選択の意味が
+ * まったく違う (DESIGN.md 第2節 裁定2) ため、色でも区別する。
+ */
+.card-flag-field {
+  background: var(--accent);
+}
+
+.card-flag-hand {
+  background: var(--muted);
+}
+
+/* 種別の帯。実物のカードでいうタイプ行 */
+.card-type {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  background: var(--stage-color, var(--muted));
+  color: #fff;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 9px;
   line-height: 1.4;
 }
 
-.card-stock {
-  font-size: 10px;
+.card-stage {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.card-note {
+  flex: none;
+  opacity: 0.85;
+}
+
+.card-text {
+  flex: 1 0 auto;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 3px;
+  padding: 2px 3px;
+  background: #faf7ee;
+  /* --text-fit は文字数から src/ui/card.ts が入れる (長い文ほど小さい) */
+  font-size: clamp(7px, calc(var(--text-fit, 9) * 1cqw), 12px);
+  line-height: 1.35;
   color: var(--muted);
-  margin-top: 2px;
-}
-
-.card-badge {
-  margin-top: 2px;
-  font-size: 10px;
-  background: var(--border);
-  color: var(--text);
-  border-radius: 4px;
-  padding: 1px 4px;
-}
-
-.card-badge-warning {
-  background: var(--warning-bg);
-  color: var(--warning-text);
 }
 
 .card-invasive {
@@ -403,11 +507,6 @@ button {
   gap: 6px;
 }
 
-.hand-card {
-  min-height: 104px;
-  padding: 6px;
-}
-
 /* ---------- 供給 ---------- */
 
 .supply-row {
@@ -424,10 +523,6 @@ button {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
   gap: 6px;
-}
-
-.supply-card {
-  min-height: 96px;
 }
 
 /* ---------- 捕食対象の選択ダイアログ ---------- */
@@ -465,34 +560,11 @@ button {
   line-height: 1.4;
 }
 
+/* カードに縦横比を付けた分1枚が縦に伸びるので、候補は3列にして一覧性を保つ */
 .prey-list {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
   gap: 8px;
-}
-
-.prey-choice {
-  min-height: 60px;
-  gap: 3px;
-}
-
-/* 同名のカードでも、場か手札かで選択の意味がまったく違う (DESIGN.md 第2節 裁定2) */
-.prey-zone {
-  align-self: flex-start;
-  border-radius: 4px;
-  padding: 1px 6px;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.prey-zone-field {
-  background: #e3efe4;
-  color: var(--accent);
-}
-
-.prey-zone-hand {
-  background: var(--border);
-  color: var(--text);
 }
 
 .dialog-cancel {

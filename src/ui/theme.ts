@@ -104,3 +104,18 @@ export function trophicColor(trophic: Exclude<Trophic, 0>): string {
       return "#b23a3a";
   }
 }
+
+/**
+ * 16進の色を黒 (ratio < 0) か白 (ratio > 0) へ寄せる。
+ * カードの絵柄で、段階色から影と差し色を作るために使う。
+ */
+export function shade(hex: string, ratio: number): string {
+  const value = Number.parseInt(hex.slice(1), 16);
+  const target = ratio < 0 ? 0 : 255;
+  const weight = Math.min(Math.abs(ratio), 1);
+  const mix = (channel: number): number => Math.round(channel + (target - channel) * weight);
+  const r = mix((value >> 16) & 0xff);
+  const g = mix((value >> 8) & 0xff);
+  const b = mix(value & 0xff);
+  return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
+}

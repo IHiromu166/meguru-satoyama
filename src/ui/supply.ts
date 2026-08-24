@@ -1,6 +1,6 @@
 import type { CardDef, CardKind, GameState, Trophic } from "../core/types";
 import { CARDS } from "../data/cards";
-import { colorFor } from "./theme";
+import { createCardFace } from "./card";
 
 export interface SupplyCallbacks {
   onGain(defId: string): void;
@@ -72,32 +72,12 @@ function renderSupplyCard(state: GameState, def: CardDef, callbacks: SupplyCallb
   const affordable =
     state.phase === "gain" && state.gainsLeft > 0 && remaining > 0 && state.energy >= cost;
 
-  const card = document.createElement("button");
-  card.type = "button";
-  card.className = "card supply-card";
-  card.style.setProperty("--stage-color", colorFor(def));
+  const card = createCardFace(def, { cost, note: `残り${remaining}` });
+  card.classList.add("supply-card");
   if (!affordable) {
     card.classList.add("card-disabled");
     card.disabled = true;
   }
-
-  const costEl = document.createElement("span");
-  costEl.className = "card-cost";
-  costEl.textContent = String(cost);
-
-  const name = document.createElement("span");
-  name.className = "card-name";
-  name.textContent = def.name;
-
-  const text = document.createElement("span");
-  text.className = "card-text";
-  text.textContent = def.text;
-
-  const stock = document.createElement("span");
-  stock.className = "card-stock";
-  stock.textContent = `残り${remaining}`;
-
-  card.append(costEl, name, text, stock);
 
   card.addEventListener("click", () => {
     if (!affordable) {

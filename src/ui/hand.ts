@@ -1,6 +1,8 @@
 import type { CardInstance, GameState } from "../core/types";
 import { canPlay, legalPreys, needsPrey } from "../core/engine";
-import { colorFor, defOf, stageLabel } from "./theme";
+import { createCardArt } from "./art";
+import { createCardFace, type CardFaceOptions } from "./card";
+import { colorFor, defOf } from "./theme";
 
 export interface HandCallbacks {
   /** カードをプレイする。捕食が必要な場合は preyUid を渡す */
@@ -35,26 +37,41 @@ export function renderField(state: GameState, container: HTMLElement): void {
   }
 }
 
+/** 場のカードは1枚が小さいので、絵柄は名前の脇に添える程度に留める */
 function renderChip(inst: CardInstance): HTMLElement {
   const def = defOf(inst.defId);
   const chip = document.createElement("div");
   chip.className = "chip";
   chip.style.setProperty("--stage-color", colorFor(def));
-  chip.textContent = def.name;
+
+  const art = document.createElement("span");
+  art.className = "chip-art";
+  art.appendChild(createCardArt(def));
+
+  const name = document.createElement("span");
+  name.textContent = def.name;
+
+  chip.append(art, name);
   return chip;
 }
 
 function renderHandCard(state: GameState, inst: CardInstance, callbacks: HandCallbacks): HTMLElement {
   const def = defOf(inst.defId);
-  const card = document.createElement("button");
-  card.type = "button";
-  card.className = "card hand-card";
-  card.style.setProperty("--stage-color", colorFor(def));
 
   const isInvasive = def.kind === "invasive";
   const playable = !isInvasive && canPlay(state, inst.uid);
   const willStarve =
     !isInvasive && needsPrey(state, inst.uid) && legalPreys(state, inst.uid).length === 0;
+
+  let flag: CardFaceOptions["flag"];
+  if (isInvasive) {
+    flag = { text: "プレイ不可・常在" };
+  } else if (willStarve) {
+    flag = { text: "捕食対象なし・飢餓", tone: "warning" };
+  }
+
+  const card = createCardFace(def, { cost: def.cost, flag });
+  card.classList.add("hand-card");
 
   if (isInvasive) {
     card.classList.add("card-invasive");
@@ -64,36 +81,6 @@ function renderHandCard(state: GameState, inst: CardInstance, callbacks: HandCal
   }
   if (willStarve) {
     card.classList.add("card-starving");
-  }
-
-  const cost = document.createElement("span");
-  cost.className = "card-cost";
-  cost.textContent = def.cost === null ? "―" : String(def.cost);
-
-  const name = document.createElement("span");
-  name.className = "card-name";
-  name.textContent = def.name;
-
-  const stage = document.createElement("span");
-  stage.className = "card-stage";
-  stage.textContent = stageLabel(def);
-
-  const text = document.createElement("span");
-  text.className = "card-text";
-  text.textContent = def.text;
-
-  card.append(cost, name, stage, text);
-
-  if (isInvasive) {
-    const badge = document.createElement("span");
-    badge.className = "card-badge";
-    badge.textContent = "プレイ不可・常在";
-    card.appendChild(badge);
-  } else if (willStarve) {
-    const badge = document.createElement("span");
-    badge.className = "card-badge card-badge-warning";
-    badge.textContent = "捕食対象なし・飢餓";
-    card.appendChild(badge);
   }
 
   card.addEventListener("click", () => {
@@ -149,24 +136,12 @@ function openPreyPicker(
     const def = defOf(prey.defId);
     const inField = state.field.some((candidate) => candidate.uid === prey.uid);
 
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "card prey-choice";
-    btn.style.setProperty("--stage-color", colorFor(def));
+    const btn = createCardFace(def, {
+      flag: { text: inField ? "場" : "手札", tone: inField ? "field" : "hand" },
+      showText: false,
+    });
+    btn.classList.add("prey-choice");
 
-    const name = document.createElement("span");
-    name.className = "card-name";
-    name.textContent = def.name;
-
-    const zone = document.createElement("span");
-    zone.className = `prey-zone prey-zone-${inField ? "field" : "hand"}`;
-    zone.textContent = inField ? "場" : "手札";
-
-    const stage = document.createElement("span");
-    stage.className = "card-stage";
-    stage.textContent = stageLabel(def);
-
-    btn.append(name, zone, stage);
     btn.addEventListener("click", () => {
       document.body.removeChild(overlay);
       onChoose(prey.uid);
