@@ -51,10 +51,42 @@ function setState(next: GameState): void {
   render();
 }
 
+/**
+ * 再描画のたびに DOM を丸ごと作り直すので、スクロール位置は手で引き継ぐ。
+ * これがないと手札を1枚プレイしただけで画面が一番上まで戻り、
+ * 手札まで毎回スクロールし直すことになる (狭い画面ほど痛い)。
+ *
+ * 対象は実際にスクロールする2つ。狭い画面の本体 (.game-scroll) と、
+ * 幅 900px 以上で右カラム内だけが伸びる供給欄 (.section-supply)。
+ */
+const SCROLL_KEEP_SELECTORS = [".game-scroll", ".section-supply"];
+
+function captureScroll(container: HTMLElement): Map<string, number> {
+  const saved = new Map<string, number>();
+  for (const selector of SCROLL_KEEP_SELECTORS) {
+    const element = container.querySelector(selector);
+    if (element !== null && element.scrollTop > 0) {
+      saved.set(selector, element.scrollTop);
+    }
+  }
+  return saved;
+}
+
+/** 内容が縮んで位置が残っていない場合は、ブラウザ側で入る範囲まで丸められる */
+function restoreScroll(container: HTMLElement, saved: Map<string, number>): void {
+  for (const [selector, top] of saved) {
+    const element = container.querySelector(selector);
+    if (element !== null) {
+      element.scrollTop = top;
+    }
+  }
+}
+
 function render(): void {
   if (root === null) {
     return;
   }
+  const savedScroll = captureScroll(root);
   root.innerHTML = "";
 
   if (state === null) {
@@ -74,6 +106,7 @@ function render(): void {
   }
 
   renderGameScreen(root, state);
+  restoreScroll(root, savedScroll);
 }
 
 function headerItem(text: string): HTMLElement {
