@@ -40,6 +40,8 @@ src/
     app.ts              画面全体の組み立てと入力処理
     hand.ts             手札・場・捕食対象選択の UI
     supply.ts           供給の UI
+    card.ts             カード1枚の面 (名前・絵柄・種別帯・効果文) の組み立て
+    art.ts              カードの絵柄。30種ぶんの SVG を素材なしで組む
     web.ts              食物網 / ピラミッドの SVG 可視化
     screens.ts          タイトル・結果画面
     help.ts             遊び方 (ルールと操作方法) のオーバーレイ
