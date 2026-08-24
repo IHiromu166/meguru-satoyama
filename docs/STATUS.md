@@ -250,7 +250,19 @@ GitHub Pages と同じサブパス構成をローカルで再現して確認し�
   再読み込みしても、キャッシュ済みの6ファイルだけで起動しゲームが遊べる
 - `npm run dev` (5180) も従来どおり動く。`base: "./"` は dev では `/` として扱われる
 
-未確認: **実際の GitHub Pages 上での動作**。上記2つの手作業が済むまで確認できない。
+### 本番 (GitHub Pages) での確認 — 2026-08-24
+
+`3349c9a` のデプロイが成功し、<https://ihiromu166.github.io/meguru-satoyama/> が公開された。
+ヘッドレス Edge で本番 URL に直接つないで確認した。
+
+- index / manifest / icon / sw / assets 配下がすべて 200
+- Service Worker のスコープが `https://ihiromu166.github.io/meguru-satoyama/` になり active
+- 1440×900 で2カラム、360×640 で1カラム。どちらも横のはみ出しなし
+  (`scrollWidth === clientWidth`)、手札5枚・供給25種が出る
+- 失敗リクエストゼロ、console.error ゼロ
+
+未確認: **本番 URL でのオフライン起動と、実機でのホーム画面追加**。
+オフラインの仕組み自体はローカルのサブパス再現で確認済み (上記)。
 
 ---
 
