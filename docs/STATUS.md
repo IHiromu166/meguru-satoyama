@@ -214,15 +214,18 @@ npx vite preview --port 4183 --strictPort --host 127.0.0.1
 型検査 → テスト → ビルドを回し、通れば GitHub Pages に公開する。
 公開先は <https://ihiromu166.github.io/meguru-satoyama/>。
 
-### 残っている手作業 (ユーザー側)
+### 有効化の手順 (2026-08-24 実施済み)
 
-1. **リポジトリを公開にする。** 現在 private で、GitHub Pages は
-   private リポジトリでは有料プラン (GitHub Pro 以上) でないと使えない。
+1. **リポジトリを公開にする。** GitHub Pages は private リポジトリでは
+   有料プラン (GitHub Pro 以上) でないと使えない。→ `public` に変更済み。
 2. **Settings → Pages → Build and deployment → Source を「GitHub Actions」にする。**
-   ここが未設定だと、ワークフローの deploy ジョブが失敗する。
+   ここが未設定だと deploy ジョブが失敗する。→ 設定済み。
 
-この2つが済むまで公開は完了しない。ワークフロー自体は push 済みなので、
-設定後は Actions タブから手動実行 (Run workflow) すれば公開できる。
+> **最初の2回のデプロイは失敗している** (`32673676154` / `32673762809`)。
+> どちらも上記2の設定より前に走ったもので、build ジョブは全ステップ成功、
+> `actions/deploy-pages@v4` の1ステップだけが落ちていた。
+> 設定を変えても**自動では再実行されない**ので、Actions タブの Run workflow
+> (`workflow_dispatch` を入れてある) か、次の push で走らせ直す必要がある。
 
 ### サブパス対応でやったこと
 
@@ -257,7 +260,7 @@ GitHub Pages と同じサブパス構成をローカルで再現して確認し�
 | --- | --- |
 | 作業ブランチ | `main` のみ。以降のコミットはここに直接載せる |
 | `origin/main` | **push 済み** (2026-08-24、`b585c2e`)。以降は push するたび Pages のデプロイが走る |
-| リポジトリの公開範囲 | **private。** GitHub Pages を使うには公開にするか GitHub Pro が要る (下記) |
+| リポジトリの公開範囲 | **public** (2026-08-24 に変更)。GitHub Pages を無料プランで使うために必要 |
 | 未取り込みのブランチ | なし (`claude/ui` `codex/pwa` `codex/core` `codex/clarify-branch-rules` すべて main に入っている) |
 | worktree | `d:\git\game` (main) / `d:\git\game-claude` / `d:\git\game-codex` ← 後者2つは削除待ち |
 
