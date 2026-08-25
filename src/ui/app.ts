@@ -34,12 +34,35 @@ const NEXT_PHASE_LABEL: Record<Phase, string> = {
 /** ログの表示件数。360px の画面を圧迫しない範囲に絞り、残りは開いてスクロールさせる */
 const LOG_VISIBLE = 8;
 
+/**
+ * ゲーム画面の骨組み。**再描画で作り直さない要素**への参照をここに持つ。
+ *
+ * スクロールしているのは、狭い画面では `.game-scroll`、900px 以上では `.section-supply`。
+ * 以前は再描画のたびに画面全体を作り直していたため、この箱ごと別の DOM ノードに
+ * 入れ替わり、ブラウザがスクロール位置を捨てていた
+ * (手札を1枚プレイするたびに画面が一番上へ戻っていた原因)。
+ *
+ * 箱は最初の1回だけ作り、以降は**中身だけ**を入れ替える。スクロール位置は
+ * 要素が生き残っていればブラウザが勝手に保つので、こちらで復元はしない。
+ */
+interface GameShell {
+  header: HTMLElement;
+  log: HTMLElement;
+  web: HTMLElement;
+  field: HTMLElement;
+  hand: HTMLElement;
+  supply: HTMLElement;
+  advanceButton: HTMLButtonElement;
+}
+
 let state: GameState | null = null;
 let root: HTMLElement | null = null;
 /** 結果画面で提示するために、開始時のシードを UI 側で覚えておく (GameState は持っていない) */
 let currentSeed = 0;
-/** ログ欄の開閉。再描画で DOM を作り直すため、開閉状態はここに保持する */
+/** ログ欄の開閉。details は使い回すが、タイトルへ戻ると作り直すのでここにも持つ */
 let logOpen = true;
+/** ゲーム画面の骨組み。タイトル・結果画面へ移るときに捨てる */
+let shell: GameShell | null = null;
 
 export function mountApp(container: HTMLElement): void {
   root = container;
@@ -51,45 +74,15 @@ function setState(next: GameState): void {
   render();
 }
 
-/**
- * 再描画のたびに DOM を丸ごと作り直すので、スクロール位置は手で引き継ぐ。
- * これがないと手札を1枚プレイしただけで画面が一番上まで戻り、
- * 手札まで毎回スクロールし直すことになる (狭い画面ほど痛い)。
- *
- * 対象は実際にスクロールする2つ。狭い画面の本体 (.game-scroll) と、
- * 幅 900px 以上で右カラム内だけが伸びる供給欄 (.section-supply)。
- */
-const SCROLL_KEEP_SELECTORS = [".game-scroll", ".section-supply"];
-
-function captureScroll(container: HTMLElement): Map<string, number> {
-  const saved = new Map<string, number>();
-  for (const selector of SCROLL_KEEP_SELECTORS) {
-    const element = container.querySelector(selector);
-    if (element !== null && element.scrollTop > 0) {
-      saved.set(selector, element.scrollTop);
-    }
-  }
-  return saved;
-}
-
-/** 内容が縮んで位置が残っていない場合は、ブラウザ側で入る範囲まで丸められる */
-function restoreScroll(container: HTMLElement, saved: Map<string, number>): void {
-  for (const [selector, top] of saved) {
-    const element = container.querySelector(selector);
-    if (element !== null) {
-      element.scrollTop = top;
-    }
-  }
-}
-
 function render(): void {
   if (root === null) {
     return;
   }
-  const savedScroll = captureScroll(root);
-  root.innerHTML = "";
 
+  // タイトルと結果はゲーム画面と骨組みを共有しないので、作り直す
+  // (renderTitle / renderResult が中身を消してから描く)
   if (state === null) {
+    shell = null;
     renderTitle(root, (seed) => {
       currentSeed = seed;
       setState(createGame(seed));
@@ -98,6 +91,7 @@ function render(): void {
   }
 
   if (state.result !== "playing" || state.phase === "over") {
+    shell = null;
     renderResult(root, state, scoreOf(state), currentSeed, () => {
       state = null;
       render();
@@ -105,8 +99,10 @@ function render(): void {
     return;
   }
 
-  renderGameScreen(root, state);
-  restoreScroll(root, savedScroll);
+  if (shell === null) {
+    shell = buildGameShell(root);
+  }
+  updateGameScreen(shell, state);
 }
 
 function headerItem(text: string): HTMLElement {
@@ -131,10 +127,7 @@ function section(className: string, title: string): { root: HTMLElement; body: H
  * ヘッダは2段。上段が今の手番の状況、下段がデッキの内訳。
  * このゲームはデッキの循環そのものが主題なので、山札・捨て札・廃棄の枚数は常時見せる。
  */
-function renderHeader(s: GameState): HTMLElement {
-  const header = document.createElement("header");
-  header.className = "game-header";
-
+function updateHeader(header: HTMLElement, s: GameState): void {
   const main = document.createElement("div");
   main.className = "header-row";
   main.append(
@@ -162,33 +155,15 @@ function renderHeader(s: GameState): HTMLElement {
     headerItem(`侵入圧 ${invasionPressureLabel(invasionPressure(s.turn))}`),
   );
 
-  header.append(main, deck);
-  return header;
+  header.replaceChildren(main, deck);
 }
 
-/**
- * ログ。フェイズを送った結果 (侵入・増殖・捕食・飢餓) は、ここを読まないと分からない。
- * スクロール領域の外に置き、送りボタンを押した直後に必ず目に入るようにする。
- */
-function renderLog(s: GameState): HTMLElement {
-  const details = document.createElement("details");
-  details.className = "log";
-  details.open = logOpen;
-  details.addEventListener("toggle", () => {
-    logOpen = details.open;
-  });
-
-  const summary = document.createElement("summary");
-  summary.className = "log-summary";
-  summary.textContent = "ログ";
-  details.appendChild(summary);
-
+function buildLogContent(s: GameState): HTMLElement {
   if (s.log.length === 0) {
     const empty = document.createElement("p");
     empty.className = "log-empty";
     empty.textContent = "まだ何も起きていない";
-    details.appendChild(empty);
-    return details;
+    return empty;
   }
 
   const list = document.createElement("ul");
@@ -204,9 +179,23 @@ function renderLog(s: GameState): HTMLElement {
     item.append(turn, text);
     list.appendChild(item);
   }
-  details.appendChild(list);
+  return list;
+}
 
-  return details;
+/**
+ * ログ。フェイズを送った結果 (侵入・増殖・捕食・飢餓) は、ここを読まないと分からない。
+ * スクロール領域の外に置き、送りボタンを押した直後に必ず目に入るようにする。
+ *
+ * `details` と `summary` は使い回し、一覧だけ差し替える。開閉状態を DOM に残すため。
+ */
+function updateLog(log: HTMLElement, s: GameState): void {
+  const next = buildLogContent(s);
+  const current = log.querySelector(".log-list, .log-empty");
+  if (current === null) {
+    log.appendChild(next);
+  } else {
+    current.replaceWith(next);
+  }
 }
 
 /**
@@ -215,22 +204,36 @@ function renderLog(s: GameState): HTMLElement {
  *
  * DOM はこの1通りだけで、幅 900px 以上では CSS 側が左右2カラムに組み替える
  * (左: 食物網・場・ログ / 右: 手札・供給)。詳細は docs/STATUS.md「画面幅ごとのレイアウト」。
+ *
+ * ここで作った要素は**ゲーム中ずっと使い回す**。中身の更新は updateGameScreen が行う。
  */
-function renderGameScreen(container: HTMLElement, s: GameState): void {
+function buildGameShell(container: HTMLElement): GameShell {
+  container.innerHTML = "";
   container.className = "screen screen-game";
-  container.append(renderHeader(s), renderLog(s));
+
+  const header = document.createElement("header");
+  header.className = "game-header";
+
+  const log = document.createElement("details");
+  log.className = "log";
+  log.open = logOpen;
+  log.addEventListener("toggle", () => {
+    logOpen = log.open;
+  });
+  const summary = document.createElement("summary");
+  summary.className = "log-summary";
+  summary.textContent = "ログ";
+  log.appendChild(summary);
+
+  container.append(header, log);
 
   const scroll = document.createElement("div");
   scroll.className = "game-scroll";
   container.appendChild(scroll);
 
   const web = section("section-web", "食物網");
-  scroll.appendChild(web.root);
-  renderWeb(s, web.body);
-
   const field = section("section-field", "場");
-  scroll.appendChild(field.root);
-  renderField(s, field.body);
+  scroll.append(web.root, field.root);
 
   // 手札と供給は「触るもの」。広い画面では2カラムの右側へまとめて寄せるので、
   // ひとつの箱に入れておく (狭い画面では display: contents で透過させ、並びは変わらない)。
@@ -239,24 +242,45 @@ function renderGameScreen(container: HTMLElement, s: GameState): void {
   scroll.appendChild(main);
 
   const hand = section("section-hand", "手札");
-  main.appendChild(hand.root);
-  renderHand(s, hand.body, {
-    onPlay: (uid, preyUid) => setState(playCard(s, uid, preyUid)),
-  });
-
   const supply = section("section-supply", "供給");
-  main.appendChild(supply.root);
-  renderSupply(s, supply.body, {
-    onGain: (defId) => setState(gainCard(s, defId)),
-  });
+  main.append(hand.root, supply.root);
 
   const advanceBar = document.createElement("div");
   advanceBar.className = "advance-bar";
   const advanceButton = document.createElement("button");
   advanceButton.type = "button";
   advanceButton.className = "primary-button";
-  advanceButton.textContent = NEXT_PHASE_LABEL[s.phase];
-  advanceButton.addEventListener("click", () => setState(advancePhase(s)));
+  // ボタンを使い回すので、押した時点の state を見る (描画時の値を閉じ込めない)
+  advanceButton.addEventListener("click", () => {
+    if (state !== null) {
+      setState(advancePhase(state));
+    }
+  });
   advanceBar.appendChild(advanceButton);
   container.appendChild(advanceBar);
+
+  return {
+    header,
+    log,
+    web: web.body,
+    field: field.body,
+    hand: hand.body,
+    supply: supply.body,
+    advanceButton,
+  };
+}
+
+/** 骨組みはそのままに、中身だけを今の状態で描き直す */
+function updateGameScreen(view: GameShell, s: GameState): void {
+  updateHeader(view.header, s);
+  updateLog(view.log, s);
+  renderWeb(s, view.web);
+  renderField(s, view.field);
+  renderHand(s, view.hand, {
+    onPlay: (uid, preyUid) => setState(playCard(s, uid, preyUid)),
+  });
+  renderSupply(s, view.supply, {
+    onGain: (defId) => setState(gainCard(s, defId)),
+  });
+  view.advanceButton.textContent = NEXT_PHASE_LABEL[s.phase];
 }
